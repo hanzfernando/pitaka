@@ -24,7 +24,7 @@ export default function LandingPage() {
     }
 
     checkUser();
-  }, [router]);
+  }, [router, supabase.auth]);
 
   return (
     <div className="min-h-screen flex flex-col">

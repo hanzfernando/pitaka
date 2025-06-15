@@ -30,7 +30,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [username, setUsername] = useState("user");
-  const { logout, loading } = useLogout(); // ✅ Call useLogout at the top
+  const { logout, loading } = useLogout();
   const router = useRouter();
   const supabase = createClient();
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function Sidebar() {
       setUsername(name || "user");
     };
     getUser();
-  }, []);
+  }, [supabase.auth]);
 
   return (
     <aside className="w-64 h-screen border-r flex flex-col justify-between p-4 shadow-sm">
