@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LandingPage() {
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     async function checkUser() {
@@ -28,7 +29,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
-      <nav className="flex justify-end p-6 bg-white shadow-md">
+      <nav className="flex justify-end p-6 shadow-md">
         <div className="space-x-4">
           <Link
             href="/auth/login"
@@ -46,9 +47,9 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <main className="flex-grow flex flex-col justify-center items-center bg-gradient-to-br from-blue-50 to-blue-100 px-6 text-center">
-        <h1 className="text-5xl font-extrabold text-gray-900 mb-4">Pitaka</h1>
-        <p className="text-xl text-gray-700 max-w-xl">
+      <main className="flex-grow flex flex-col justify-center items-center">
+        <h1 className="text-5xl font-extrabold mb-4">Pitaka</h1>
+        <p className="text-xl max-w-xl">
           An Expense and Subscription Tracker
         </p>
       </main>

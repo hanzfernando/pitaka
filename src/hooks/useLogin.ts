@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-
+  const supabase = createClient();
   const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
