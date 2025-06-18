@@ -18,7 +18,6 @@ export default function LandingPage() {
       console.log('User:', user);
 
       if (user) {
-        // User is logged in, redirect to dashboard
         router.replace('/dashboard');
       }
     }
@@ -27,19 +26,19 @@ export default function LandingPage() {
   }, [router, supabase.auth]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white text-black dark:bg-zinc-900 dark:text-white transition-colors duration-300">
       {/* Navbar */}
-      <nav className="flex justify-end p-6 shadow-md">
+      <nav className="flex justify-end p-6 shadow-md bg-white dark:bg-zinc-800 transition-colors">
         <div className="space-x-4">
           <Link
             href="/auth/login"
-            className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition"
+            className="px-4 py-2 border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900 transition"
           >
             Login
           </Link>
           <Link
             href="/auth/signup"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition"
           >
             Signup
           </Link>
@@ -47,12 +46,12 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <main className="flex-grow flex flex-col justify-center items-center">
+      <main className="flex-grow flex flex-col justify-center items-center text-center px-4">
         <h1 className="text-5xl font-extrabold mb-4">Pitaka</h1>
         <p className="text-xl max-w-xl">
           An Expense and Subscription Tracker
         </p>
       </main>
     </div>
-  )
+  );
 }
