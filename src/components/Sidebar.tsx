@@ -8,8 +8,6 @@ import {
   Home,
   Wallet,
   Folder,
-  BarChart,
-  Book,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -18,11 +16,11 @@ const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
   { label: "My Expenses", icon: Wallet, href: "/dashboard/expenses" },
   { label: "Categories", icon: Folder, href: "/dashboard/categories" },
-  { label: "Reports", icon: BarChart, href: "/dashboard/reports", optional: true },
+  // { label: "Reports", icon: BarChart, href: "/dashboard/reports", optional: true },
 
   { divider: true },
 
-  { label: "Activity Log", icon: Book, href: "/dashboard/activity", optional: true },
+  // { label: "Activity Log", icon: Book, href: "/dashboard/activity", optional: true },
   { label: "Settings", icon: Settings, href: "/dashboard/settings" },
   { label: "Logout", icon: LogOut, action: "logout" },
 ];
@@ -54,19 +52,19 @@ export default function Sidebar() {
               return <hr key={index} className="my-3 border-gray-200" />;
             }
 
-            if (item.optional && (item.label === "Reports" || item.label === "Activity Log")) {
-              return null;
-            }
+            // if (item.optional && (item.label === "Reports" || item.label === "Activity Log")) {
+            //   return null;
+            // }
 
             const isActive = pathname === item.href;
             const ItemIcon = item.icon!;
 
             const baseClasses =
-              "flex items-center w-full px-3 py-2 rounded-md transition-colors";
+              "flex items-center w-full px-3 border-transparent border-1 py-2 rounded-md transition-colors";
             const activeClasses =
               "bg-blue-600 text-white hover:bg-blue-500";
             const inactiveClasses =
-              "hover:bg-gray-100";
+              "hover:border-gray-400 hover:bg-gray-900";
 
             const classes = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
 
