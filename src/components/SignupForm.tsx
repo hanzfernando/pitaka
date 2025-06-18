@@ -18,7 +18,7 @@ export default function SignupForm() {
   return (
     <form onSubmit={handleSignup} className="space-y-5">
       <div>
-        <label htmlFor="email" className="block text-sm text-white">Email</label>
+        <label htmlFor="email" className="block text-sm">Email</label>
         <input
           type="email"
           id="email"
@@ -30,7 +30,7 @@ export default function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm text-white">Password</label>
+        <label htmlFor="password" className="block text-sm">Password</label>
         <input
           type="password"
           id="password"
@@ -42,7 +42,7 @@ export default function SignupForm() {
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm text-white">Confirm Password</label>
+        <label htmlFor="confirmPassword" className="block text-sm ">Confirm Password</label>
         <input
           type="password"
           id="confirmPassword"
@@ -63,10 +63,10 @@ export default function SignupForm() {
         {loading ? "Creating account..." : "Sign Up"}
       </button>
 
-      <p className="text-sm text-center text-white/80">
+      <p className="text-sm text-center ">
         Already have an account?{" "}
         <Link href="/auth/login" className="text-blue-400 hover:underline">
-          Sign in
+          Log in
         </Link>
       </p>
     </form>

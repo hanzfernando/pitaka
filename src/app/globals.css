@@ -2,14 +2,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Light mode */
 @theme {
-  --color-background: white;
-  --color-foreground: black;
+  --color-background: #f9fafb;    
+  --color-foreground: #1f2937;    
 }
 
+/* Dark mode */
 .dark {
-  --color-background: black;
-  --color-foreground: white;
+  --color-background: #18181b;    
+  --color-foreground: #f4f4f5;    
 }
 
 body {

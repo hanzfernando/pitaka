@@ -15,14 +15,14 @@ const CategoryTable: React.FC<Props> = ({ categories }) => {
   );
 
   return (
-    <div className="w-full rounded-2xl border border-border bg-card shadow-md p-6">
-      <div className="mb-6">
+    <div className="w-full rounded-2xl border border-border bg-white dark:bg-zinc-800 shadow-md p-6 space-y-6">
+      <div className="mb-4">
         <input
           type="text"
-          placeholder="Search by name..."
+          placeholder="Search categories 🔍"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm w-full sm:w-64 shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
+          className="border border-input bg-muted text-foreground rounded-full px-4 py-2 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-primary transition"
         />
       </div>
 
@@ -30,8 +30,6 @@ const CategoryTable: React.FC<Props> = ({ categories }) => {
         <table className="min-w-full text-sm">
           <thead className="bg-muted text-muted-foreground">
             <tr className="text-left font-medium">
-              {/* <th className="px-4 py-3">ID</th> */}
-              {/* <th className="px-4 py-3">User ID</th> */}
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Color</th>
               <th className="px-4 py-3">Created At</th>
@@ -41,10 +39,10 @@ const CategoryTable: React.FC<Props> = ({ categories }) => {
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
-                  className="text-center py-6 text-muted-foreground"
+                  colSpan={3}
+                  className="text-center py-6 text-muted-foreground italic"
                 >
-                  No categories found.
+                  Nothing here yet. Add your first category above!
                 </td>
               </tr>
             ) : (
@@ -53,8 +51,6 @@ const CategoryTable: React.FC<Props> = ({ categories }) => {
                   key={cat.id}
                   className="border-t border-border hover:bg-muted/30 transition-colors"
                 >
-                  {/* <td className="px-4 py-3">{cat.id}</td> */}
-                  {/* <td className="px-4 py-3">{cat.user_id}</td> */}
                   <td className="px-4 py-3 font-medium text-foreground">
                     {cat.name}
                   </td>
