@@ -54,3 +54,58 @@ export async function addCategory(Category: Omit<Category, "id" | "created_at">)
 
   return data as Category;
 }
+
+export async function updateCategory(category: Category): Promise<Category | null> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("User not authenticated");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("categories")
+    .update(category)
+    .eq("id", category.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating category:", error.message);
+    return null;
+  }
+
+  return data as Category;
+}
+
+export async function deleteCategory(id: string): Promise<boolean> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("User not authenticated");
+    return false;
+  }
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error deleting category:", error.message);
+    return false;
+  }
+
+  return true;
+}

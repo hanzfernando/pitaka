@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Category } from "@/types/category";
-import { addCategory } from "@/lib/services/categoryService";
 
 type Props = {
   onClose: () => void;
@@ -37,15 +36,8 @@ const AddCategoryModal: React.FC<Props> = ({ onClose, onAdd }) => {
       return;
     }
 
-    const newCategory = await addCategory({ name, color, user_id: "" });
+    onAdd({ name, color } as Category);
 
-    if (!newCategory) {
-      setError("Failed to add category. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    onAdd(newCategory);
     onClose();
     setLoading(false);
   };
@@ -66,26 +58,31 @@ const AddCategoryModal: React.FC<Props> = ({ onClose, onAdd }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Color (hex)</label>
-            <input
-              type="text"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              required
-              placeholder="e.g., ffcc00"
-              className="w-full border border-input bg-background text-foreground rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {color && (
-              <div className="mt-2 flex items-center gap-2">
-                <span
-                  className="w-5 h-5 rounded-full border"
-                  style={{ backgroundColor: `#${color}` }}
+            <label className="block text-sm font-medium mb-1">Color</label>
+            <div className="flex items-center gap-3">
+              <label className="relative w-9 h-9 overflow-hidden cursor-pointer hover:scale-105 transition-transform">
+                <input
+                  type="color"
+                  value={`#${color}`}
+                  onChange={(e) => setColor(e.target.value.replace("#", ""))}
+                  className="w-full h-full appearance-none cursor-pointer"
                 />
-                <span className="text-xs text-muted-foreground">Preview</span>
+              </label>
+
+              <div className="flex items-center gap-1 border border-input rounded-lg px-2 py-1 bg-background text-foreground text-sm">
+                <span className="text-muted-foreground">#</span>
+                <input
+                  type="text"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  placeholder="e.g., ffcc00"
+                  maxLength={6}
+                  className="w-20 bg-transparent focus:outline-none"
+                />
               </div>
-            )}
+            </div>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive text-red-500">{error}</p>}
           <div className="flex justify-end gap-2">
             <button
               type="button"
