@@ -7,70 +7,62 @@ import EditCategoryModal from "@/components/category/EditCategoryModal";
 import ConfirmDeleteModal from "@/components/category/ConfirmDeleteModal";
 
 import { Category } from "@/types/category";
-import { fetchCategories } from "@/lib/services/categoryService";
-import { updateCategory } from "@/lib/services/categoryService";
-import { addCategory } from "@/lib/services/categoryService";
-import { deleteCategory } from "@/lib/services/categoryService";
+import {
+  fetchCategories,
+  addCategory,
+  updateCategory,
+  deleteCategory,
+} from "@/lib/services/categoryService";
+
+// Modal types
+type ModalType = "add" | "edit" | "delete" | null;
 
 export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [modal, setModal] = useState<ModalType>(null);
+  const [activeCategory, setActiveCategory] = useState<Category | null>(null);
 
   useEffect(() => {
     const fetchUserCategories = async () => {
-      const fetchedCategories = await fetchCategories();
-      setCategories(fetchedCategories);
+      const fetched = await fetchCategories();
+      setCategories(fetched);
     };
-
     fetchUserCategories();
   }, []);
 
-  // ─── Handlers ───────────────────────────────────────────────────
+  // ─── Handlers ─────────────────────────────────────────
   const handleAddCategory = async (input: Omit<Category, "id" | "created_at">) => {
     try {
-      const newCategory = await addCategory(input);
-      if (newCategory) {
-        setCategories((prev) => [newCategory, ...prev]);
-        setShowAddModal(false);
-      }
+      const created = await addCategory(input);
+      if (created) setCategories((prev) => [created, ...prev]);
+      closeModal();
     } catch (err) {
-      console.error("Failed to add category:", err);
+      console.error("Add failed:", err);
     }
   };
 
   const handleEditCategory = async (updated: Category) => {
     try {
-      const saved = await updateCategory(updated); // service call here
-      
-      if (!saved) {
-        throw new Error("Failed to update category");
-      }
-      
-      updateCategoryList(saved); // update local state
-      closeEditModal(); // close modal
+      const saved = await updateCategory(updated);
+      if (saved) updateCategoryList(saved);
+      closeModal();
     } catch (err) {
-      console.error("Failed to update category:", err);
-      // optional: show error toast or state
+      console.error("Update failed:", err);
     }
-};
-
-  const handleDeleteCategory = (deleted: Category) => {
-    try {
-      const success = deleteCategory(deleted.id);
-      if (!success) {
-        throw new Error("Failed to delete category");
-      }
-      removeCategoryFromList(deleted.id); // update local state
-      closeDeleteModal(); // close modal
-    } catch (err) {
-      console.error("Failed to delete category:", err);
-    }
-    
   };
 
-  // ─── Helpers ────────────────────────────────────────────────────
+  const handleDeleteCategory = async () => {
+    if (!activeCategory) return;
+    try {
+      const success = await deleteCategory(activeCategory.id);
+      if (success) removeCategoryFromList(activeCategory.id);
+      closeModal();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
+
+  // ─── Helpers ─────────────────────────────────────────
   const updateCategoryList = (updated: Category) => {
     setCategories((prev) =>
       prev.map((cat) => (cat.id === updated.id ? updated : cat))
@@ -81,16 +73,23 @@ export default function Categories() {
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
   };
 
-  const closeEditModal = () => setEditingCategory(null);
-  const closeDeleteModal = () => setDeletingCategory(null);
+  const openModal = (type: ModalType, category: Category | null = null) => {
+    setModal(type);
+    setActiveCategory(category);
+  };
 
-  // ─── UI ─────────────────────────────────────────────────────────
+  const closeModal = () => {
+    setModal(null);
+    setActiveCategory(null);
+  };
+
+  // ─── UI ─────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6 w-full h-full px-4 py-10 bg-background text-foreground">
       <div className="flex justify-between items-center max-w-5xl w-full mx-auto">
         <h1 className="text-3xl font-bold text-primary">Your Categories 📂</h1>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => openModal("add")}
           className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow hover:brightness-110 transition"
         >
           + Add Category
@@ -100,29 +99,27 @@ export default function Categories() {
       <div className="max-w-5xl w-full mx-auto">
         <CategoryTable
           categories={categories}
-          onEdit={setEditingCategory}
-          onDelete={setDeletingCategory}
+          onEdit={(cat) => openModal("edit", cat)}
+          onDelete={(cat) => openModal("delete", cat)}
         />
       </div>
 
       {/* Modals */}
-      {showAddModal && (
-        <AddCategoryModal onClose={() => setShowAddModal(false)} onAdd={handleAddCategory} />
+      {modal === "add" && (
+        <AddCategoryModal onClose={closeModal} onAdd={handleAddCategory} />
       )}
-
-      {editingCategory && (
+      {modal === "edit" && activeCategory && (
         <EditCategoryModal
-          category={editingCategory}
-          onClose={closeEditModal}
+          category={activeCategory}
+          onClose={closeModal}
           onUpdate={handleEditCategory}
         />
       )}
-
-      {deletingCategory && (
+      {modal === "delete" && activeCategory && (
         <ConfirmDeleteModal
-          categoryName={deletingCategory.name}
-          onClose={closeDeleteModal}
-          onConfirm={() => handleDeleteCategory(deletingCategory)}
+          categoryName={activeCategory.name}
+          onClose={closeModal}
+          onConfirm={handleDeleteCategory}
         />
       )}
     </div>
