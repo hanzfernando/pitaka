@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import CategoryTable from "@/components/category/CategoryTable";
 import AddCategoryModal from "@/components/category/AddCategoryModal";
 import EditCategoryModal from "@/components/category/EditCategoryModal";
-import ConfirmDeleteModal from "@/components/category/ConfirmDeleteModal";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 import { Category } from "@/types/category";
 import {
@@ -117,7 +117,8 @@ export default function Categories() {
       )}
       {modal === "delete" && activeCategory && (
         <ConfirmDeleteModal
-          categoryName={activeCategory.name}
+          title="Delete Category"
+          itemName={activeCategory.name}
           onClose={closeModal}
           onConfirm={handleDeleteCategory}
         />
