@@ -15,6 +15,7 @@ import {
 const navItems = [
   { label: "Home", icon: Home, href: "/dashboard" },
   { label: "My Expenses", icon: Wallet, href: "/dashboard/expenses" },
+  { label: "Recurring Expenses", icon: Wallet, href: "/dashboard/recurring" },
   { label: "Categories", icon: Folder, href: "/dashboard/categories" },
   // { label: "Reports", icon: BarChart, href: "/dashboard/reports", optional: true },
 

@@ -1,10 +1,35 @@
-import { RecurringExpense } from "@/types/recurring_expense";
+import { RecurringExpense } from "@/types/recurringExpense";
 import { createClient } from "@/lib/supabase/client";
 import { addExpense } from "@/lib/services/expenseService";
+import { PopulatedRecurringExpense } from "@/types/recurringExpense";
+
+export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpense[]> {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    console.error("User not authenticated");
+    return [];
+  }
+  const { data, error } = await supabase
+    .from("recurring_expenses")
+    .select(`
+      *,
+        category:categories (
+        name,
+        color
+      )
+    `)
+    .eq("user_id", user.id);
+  if (error) {
+    console.error("Error fetching recurring expenses:", error.message);
+    return [];
+  }
+  return data as PopulatedRecurringExpense[];
+}
 
 export async function addRecurringExpense(
   recurring: Omit<RecurringExpense, "id" | "created_at" | "user_id">
-): Promise<RecurringExpense | null> {
+): Promise<PopulatedRecurringExpense | null> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -16,8 +41,14 @@ export async function addRecurringExpense(
   const { data, error } = await supabase
     .from("recurring_expenses")
     .insert({ ...recurring, user_id: user.id })
-    .select()
-    .single();
+    .select(`
+      *,
+      category:categories (
+        name,
+        color
+      )
+    `)
+    .single()
 
   if (error) {
     console.error("Error adding recurring expense:", error.message);
@@ -40,8 +71,10 @@ export async function addRecurringExpense(
     });
   }
 
-  return data as RecurringExpense;
+  return data as PopulatedRecurringExpense;
 }
+
+
 
 export async function syncRecurringExpenses() {
   const supabase = createClient();
