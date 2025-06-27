@@ -7,6 +7,7 @@ import EditCategoryModal from "@/components/category/EditCategoryModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 import { Category } from "@/types/category";
+import { CreateCategoryInput } from "@/types/category";
 import {
   fetchCategories,
   addCategory,
@@ -31,7 +32,7 @@ export default function Categories() {
   }, []);
 
   // ─── Handlers ─────────────────────────────────────────
-  const handleAddCategory = async (input: Omit<Category, "id" | "created_at">) => {
+  const handleAddCategory = async (input: CreateCategoryInput) => {
     try {
       const created = await addCategory(input);
       if (created) setCategories((prev) => [created, ...prev]);

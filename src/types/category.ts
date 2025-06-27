@@ -5,3 +5,8 @@ export interface Category {
   color: string; 
   created_at: string;
 }
+
+export interface CreateCategoryInput {
+  name: string;
+  color: string; 
+}

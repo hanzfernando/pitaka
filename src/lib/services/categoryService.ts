@@ -1,4 +1,5 @@
 import { Category } from "@/types/category";
+import { CreateCategoryInput } from "@/types/category";
 import { createClient } from "@/lib/supabase/client";
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -28,7 +29,7 @@ export async function fetchCategories(): Promise<Category[]> {
   return data as Category[];
 }
 
-export async function addCategory(Category: Omit<Category, "id" | "created_at">): Promise<Category | null> {
+export async function addCategory(category: CreateCategoryInput): Promise<Category | null> {
   const supabase = createClient();
 
   const {
@@ -43,7 +44,7 @@ export async function addCategory(Category: Omit<Category, "id" | "created_at">)
 
   const { data, error } = await supabase
     .from("categories")
-    .insert({ ...Category, user_id: user.id })
+    .insert({ ...category, user_id: user.id })
     .select()
     .single();
 
