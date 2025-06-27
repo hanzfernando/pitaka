@@ -56,7 +56,7 @@ export async function addCategory(category: CreateCategoryInput): Promise<Catego
   return data as Category;
 }
 
-export async function updateCategory(category: Category): Promise<Category | null> {
+export async function updateCategory(category: Omit<Category, "created_at" | "user_id">): Promise<Category | null> {
   const supabase = createClient();
 
   const {

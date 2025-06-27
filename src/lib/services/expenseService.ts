@@ -1,6 +1,8 @@
 import { Expense } from "@/types/expense";
 import { PopulatedExpense } from "@/types/expense";
+import { CreateExpenseInput } from "@/types/expense";
 import { createClient } from "@/lib/supabase/client";
+import { getMonthRange } from "../utils/getMonthDateRange";
 
 export async function fetchExpenses(): Promise<PopulatedExpense[]> {
   const supabase = createClient();
@@ -36,7 +38,7 @@ export async function fetchExpenses(): Promise<PopulatedExpense[]> {
 
 
 export async function addExpense(
-  expense: Omit<Expense, "id" | "created_at" | "user_id">
+  expense: CreateExpenseInput
 ): Promise<PopulatedExpense | null> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -49,15 +51,16 @@ export async function addExpense(
   // ─── Check Recurring Duplication ───
   if (expense.recurring_id) {
     const expenseDate = new Date(expense.expense_date);
-    const billingMonth = expenseDate.toISOString().slice(0, 7);
+    const [startOfMonth, endOfMonth] = getMonthRange(expenseDate);
 
     const { data: existing } = await supabase
       .from("expenses")
       .select("id")
       .eq("recurring_id", expense.recurring_id)
-      .gte("expense_date", `${billingMonth}-01`)
-      .lte("expense_date", `${billingMonth}-31`)
+      .gte("expense_date", startOfMonth)
+      .lte("expense_date", endOfMonth)
       .maybeSingle();
+
 
     if (existing) {
       console.log("Already added recurring for this month.");

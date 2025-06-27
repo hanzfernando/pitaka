@@ -1,7 +1,8 @@
-import { RecurringExpense } from "@/types/recurringExpense";
+// import { RecurringExpense } from "@/types/recurringExpense";
 import { createClient } from "@/lib/supabase/client";
 import { addExpense } from "@/lib/services/expenseService";
 import { PopulatedRecurringExpense } from "@/types/recurringExpense";
+import { CreateRecurringExpenseInput } from "@/types/recurringExpense";
 
 export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpense[]> {
   const supabase = createClient();
@@ -28,7 +29,7 @@ export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpens
 }
 
 export async function addRecurringExpense(
-  recurring: Omit<RecurringExpense, "id" | "created_at" | "user_id">
+  recurring: CreateRecurringExpenseInput
 ): Promise<PopulatedRecurringExpense | null> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -38,6 +39,7 @@ export async function addRecurringExpense(
     return null;
   }
 
+  // 1. Insert recurring expense
   const { data, error } = await supabase
     .from("recurring_expenses")
     .insert({ ...recurring, user_id: user.id })
@@ -48,20 +50,22 @@ export async function addRecurringExpense(
         color
       )
     `)
-    .single()
+    .single();
 
   if (error) {
     console.error("Error adding recurring expense:", error.message);
     return null;
   }
 
-  // Optionally: create first instance immediately
+  // 2. Add FIRST EXPENSE ONLY if start_date <= today
   const today = new Date();
   const start = new Date(recurring.start_date);
-  if (
-    today.toDateString() === start.toDateString() ||
-    today >= start
-  ) {
+
+  // Strip time for accurate comparison
+  const todayStr = today.toISOString().split("T")[0];
+  const startStr = start.toISOString().split("T")[0];
+
+  if (startStr <= todayStr) {
     await addExpense({
       name: recurring.name,
       amount: recurring.amount,
@@ -73,7 +77,6 @@ export async function addRecurringExpense(
 
   return data as PopulatedRecurringExpense;
 }
-
 
 
 export async function syncRecurringExpenses() {
