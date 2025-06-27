@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Category } from "@/types/category";
-import { Expense } from "@/types/expense";
+import { CreateExpenseInput } from "@/types/expense";
 import { fetchCategories } from "@/lib/services/categoryService";
 import { X } from "lucide-react";
 
 type Props = {
   onClose: () => void;
-  onAdd: (exp: Omit<Expense, "id" | "created_at" | "user_id">) => void;
+  onAdd: (exp: CreateExpenseInput) => void;
 };
 
 const AddExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {

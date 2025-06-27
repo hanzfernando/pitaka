@@ -20,3 +20,11 @@ export type PopulatedExpense = Expense & {
     end_date?: string | null;
   } | null;
 };
+
+export type CreateExpenseInput = {
+  name: string;
+  amount: number;
+  category_id: string;
+  expense_date: Date;
+  recurring_id?: string | null;
+}

@@ -8,6 +8,7 @@ import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 import { Expense } from "@/types/expense";
 import { PopulatedExpense } from "@/types/expense";
+import { CreateExpenseInput } from "@/types/expense";
 import { fetchExpenses, addExpense, updateExpense, deleteExpense } from "@/lib/services/expenseService";
 
 type ModalType = "add" | "edit" | "delete" | null;
@@ -28,10 +29,7 @@ export default function ExpensesPage() {
 
   // ─── Handlers ─────────────────────────────────────────
   const handleAddExpense = async (
-    input: Omit<
-      PopulatedExpense,
-      "id" | "created_at" | "user_id" | "recurring_expenses" | "categories"
-    >
+    input: CreateExpenseInput
   ) => {
     const created = await addExpense(input);
     if (!created) return;
