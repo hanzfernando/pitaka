@@ -1,7 +1,7 @@
 export type RecurringExpense = {
   id: string;
   user_id: string;
-  category_id: string;
+  category_id: string | null;
   name: string;
   amount: number;
   frequency: "daily" | "weekly" | "monthly" | "yearly";
@@ -20,7 +20,7 @@ export type PopulatedRecurringExpense = RecurringExpense & {
 export type CreateRecurringExpenseInput = {
   name: string;
   amount: number;
-  category_id: string;
+  category_id: string | null;
   frequency: "daily" | "weekly" | "monthly" | "yearly";
   start_date: Date;
   end_date?: Date | null;

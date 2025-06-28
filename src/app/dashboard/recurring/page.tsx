@@ -4,16 +4,19 @@ import { useState, useEffect } from "react";
 
 import RecurringExpenseTable from "@/components/recurring/RecurringExpenseTable";
 import AddRecurringExpenseModal from "@/components/recurring/AddRecurringExpenseModal";
+import EditRecurringExpenseModal from "@/components/recurring/EditRecurringExpenseModal";
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
-import { PopulatedRecurringExpense, CreateRecurringExpenseInput } from "@/types/recurringExpense";
+import { RecurringExpense, PopulatedRecurringExpense, CreateRecurringExpenseInput } from "@/types/recurringExpense";
 // import { RecurringExpense } from "@/types/recurringExpense";
-import { fetchRecurringExpenses, addRecurringExpense } from "@/lib/services/recurringExpenseService";
+import { fetchRecurringExpenses, addRecurringExpense, updateRecurringExpense, deleteRecurringExpense } from "@/lib/services/recurringExpenseService";
 
 type ModalType = "add" | "edit" | "delete" | null;
 
 export default function RecurringPage() {
   const [recurringExpenses, setRecurringExpenses] = useState<PopulatedRecurringExpense[]>([]);
   const [modal, setModal] = useState<ModalType>(null);
+  const [activeRecurringExpense, setActiveRecurringExpense] = useState<PopulatedRecurringExpense | null>(null);
 
   useEffect(() => {
     const loadRecurringExpenses = async () => {
@@ -33,13 +36,55 @@ export default function RecurringPage() {
     closeModal();
   };
 
+  const handleEditRecurringExpense = async (updated: PopulatedRecurringExpense) => {
+    console.log("Updating recurring expense:", updated);
+    const baseRecurringExpense: RecurringExpense = {
+      id: updated.id,
+      user_id: updated.user_id,
+      category_id: updated.category_id,
+      name: updated.name,
+      amount: updated.amount,
+      frequency: updated.frequency,
+      start_date: updated.start_date,
+      end_date: updated.end_date ?? null,
+      created_at: updated.created_at,
+    };
+    const saved = await updateRecurringExpense(baseRecurringExpense);
+    if (saved) {
+      updateRecurringExpenseList(saved);
+    }
+    closeModal();
+  };
+
+  const handleDeleteRecurringExpense = async () => {
+    if (!activeRecurringExpense) return;
+
+    const deleted = await deleteRecurringExpense(activeRecurringExpense.id);
+    if (deleted) {
+      setRecurringExpenses((prev) =>
+        prev.filter((recurring) => recurring.id !== activeRecurringExpense.id)
+      );
+      closeModal();
+    }
+  };
+
+
   // ─── Helpers ─────────────────────────────────────────
+  const updateRecurringExpenseList = (updated: PopulatedRecurringExpense) => {
+    setRecurringExpenses((prev) =>
+      prev.map((recurring) =>
+        recurring.id === updated.id ? updated : recurring
+      )
+    ); 
+  }
+
   const closeModal = () => {
     setModal(null);
   };
 
-  const openModal = (type: ModalType) => {
+  const openModal = (type: ModalType, recurringExpense: PopulatedRecurringExpense | null = null) => {
     setModal(type);
+    setActiveRecurringExpense(recurringExpense);
   };
 
   return (
@@ -57,8 +102,8 @@ export default function RecurringPage() {
       <div className="max-w-5xl w-full mx-auto">
         <RecurringExpenseTable
           recurringExpenses={recurringExpenses}
-          onEdit={() => console.log("Open edit expense modal")}
-          onDelete={() => console.log("Open delete expense modal")}
+          onEdit={(recurringExpense) => openModal("edit", recurringExpense)}
+          onDelete={(recurringExpense) => openModal("delete", recurringExpense)}
         />
       </div>
 
@@ -66,6 +111,24 @@ export default function RecurringPage() {
         <AddRecurringExpenseModal
           onClose={closeModal}
           onAdd={handleAddRecurringExpense}
+        />
+      )}
+
+      {modal === "edit" && activeRecurringExpense && (
+        <EditRecurringExpenseModal
+          recurringExpense={activeRecurringExpense}
+          onClose={closeModal}
+          onUpdate={handleEditRecurringExpense} 
+          
+        />
+      )}
+      
+      {modal === "delete" && activeRecurringExpense && (
+        <ConfirmDeleteModal
+          itemName={activeRecurringExpense.name}
+          title="Delete Recurring Expense"
+          onClose={closeModal}
+          onConfirm={handleDeleteRecurringExpense}
         />
       )}
 

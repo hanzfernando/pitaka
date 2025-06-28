@@ -1,7 +1,7 @@
 export type Expense = {
   id: string;
   user_id: string;
-  category_id: string;
+  category_id: string | null;
   name: string;
   amount: number;
   expense_date: Date;
@@ -24,7 +24,7 @@ export type PopulatedExpense = Expense & {
 export type CreateExpenseInput = {
   name: string;
   amount: number;
-  category_id: string;
+  category_id: string | null;
   expense_date: Date;
   recurring_id?: string | null;
 }

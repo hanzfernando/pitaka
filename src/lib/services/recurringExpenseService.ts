@@ -1,7 +1,7 @@
 // import { RecurringExpense } from "@/types/recurringExpense";
 import { createClient } from "@/lib/supabase/client";
 import { addExpense } from "@/lib/services/expenseService";
-import { PopulatedRecurringExpense } from "@/types/recurringExpense";
+import { PopulatedRecurringExpense, RecurringExpense } from "@/types/recurringExpense";
 import { CreateRecurringExpenseInput } from "@/types/recurringExpense";
 
 export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpense[]> {
@@ -76,6 +76,61 @@ export async function addRecurringExpense(
   }
 
   return data as PopulatedRecurringExpense;
+}
+export async function updateRecurringExpense(
+  expense: Omit<RecurringExpense, "created_at" | "user_id">,
+): Promise<PopulatedRecurringExpense | null> {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("User not authenticated");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("recurring_expenses")
+    .update(expense)
+    .eq("id", expense.id)
+    .eq("user_id", user.id)
+    .select(`
+      *,
+      category:categories (
+        name,
+        color
+      )
+    `)
+    .single();
+
+  if (error) {
+    console.error("Error updating recurring expense:", error.message);
+    return null;
+  }
+
+  return data as PopulatedRecurringExpense;
+}
+
+export async function deleteRecurringExpense(id: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("User not authenticated");
+    return false;
+  }
+
+  const { error } = await supabase
+    .from("recurring_expenses")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error deleting recurring expense:", error.message);
+    return false;
+  }
+
+  return true;
 }
 
 

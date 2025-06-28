@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PopulatedExpense } from "@/types/expense";
+import { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import { PopulatedRecurringExpense } from "@/types/recurringExpense";
 import { fetchCategories } from "@/lib/services/categoryService";
 import { Category } from "@/types/category";
-import { X } from "lucide-react";
 
-type EditExpenseProps = {
-  expense: PopulatedExpense;
+type EditRecurringExpenseProps = {
+  recurringExpense: PopulatedRecurringExpense;
   onClose: () => void;
-  onUpdate: (exp: PopulatedExpense) => void;
+  onUpdate: (exp: PopulatedRecurringExpense) => void;
 };
 
-const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpdate }) => {
-  const [name, setName] = useState(expense.name);
-  const [amount, setAmount] = useState(expense.amount.toString());
-  const [categoryId, setCategoryId] = useState(expense.category_id);
-  const [expenseDate, setExpenseDate] = useState(
-    () => new Date(expense.expense_date).toISOString().split("T")[0]
+const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurringExpense, onClose, onUpdate}) => {
+  const [name, setName] = useState(recurringExpense.name);
+  const [amount, setAmount] = useState(recurringExpense.amount.toString());
+  const [categoryId, setCategoryId] = useState(recurringExpense.category_id);
+  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly" | "yearly">(recurringExpense.frequency);
+  const [startDate, setStartDate] = useState(() =>
+    new Date(recurringExpense.start_date).toISOString().split("T")[0]
+  );
+  const [endDate, setEndDate] = useState(
+    recurringExpense.end_date ? new Date(recurringExpense.end_date).toISOString().split("T")[0] : ""
   );
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState("");
@@ -33,51 +37,37 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
     setLoading(true);
 
     const amt = parseFloat(amount);
-    if (!name.trim()) {
-      setError("Name cannot be empty.");
-      setLoading(false);
-      return;
-    }
-    if (isNaN(amt) || amt <= 0) {
-      setError("Amount must be a valid number greater than 0.");
-      setLoading(false);
-      return;
-    }
-    if (!categoryId) {
-      setError("Please select a category.");
+    if (!name || isNaN(amt) || !categoryId || !frequency || !startDate) {
+      setError("Please fill in all required fields correctly.");
       setLoading(false);
       return;
     }
 
-    // 🔍 Find the category details for populated field
-  const selectedCategory = categories.find((cat) => cat.id === categoryId);
-
-  const updatedExpense: PopulatedExpense = {
-    ...expense,
-    name,
-    amount: amt,
-    category_id: categoryId,
-    expense_date: new Date(expenseDate),
-    categories: selectedCategory
-      ? { name: selectedCategory.name, color: selectedCategory.color }
-      : null, // fallback just in case
-  };
+    const updatedExpense: PopulatedRecurringExpense = {
+      ...recurringExpense,
+      name,
+      amount: amt,
+      category_id: categoryId,
+      frequency,
+      start_date: new Date(startDate),
+      end_date: endDate ? new Date(endDate) : null,
+    };
 
     onUpdate(updatedExpense);
     setLoading(false);
     onClose();
   };
-
+  
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg w-full max-w-md p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Edit Expense</h2>
-          <button onClick={onClose}>
-            <X className="w-5 h-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">Edit Recurring Expense</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X size={20} />
           </button>
         </div>
-
+        {error && <p className="text-red-500 text-sm">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <input
@@ -106,11 +96,30 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
                 </option>
               ))}
             </select>
+            <select
+              value={frequency}
+              onChange={(e) =>
+                setFrequency(e.target.value as "daily" | "weekly" | "monthly" | "yearly")
+              }
+              className="w-full border border-input bg-white dark:bg-zinc-800 text-black dark:text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
             <input
               type="date"
-              value={expenseDate}
-              onChange={(e) => setExpenseDate(e.target.value)}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+            />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              placeholder="Optional End Date"
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
@@ -127,7 +136,7 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-primary  text-black dark:text-white hover:bg-primary/90 transition"
+              className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition"
             >
               {loading ? "Saving..." : "Save"}
             </button>
@@ -135,7 +144,7 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
         </form>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default EditExpenseModal;
+export default EditRecurringExpenseModal
