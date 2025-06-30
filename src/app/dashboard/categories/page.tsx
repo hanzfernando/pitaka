@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import CategoryTable from "@/components/category/CategoryTable";
 import AddCategoryModal from "@/components/category/AddCategoryModal";
 import EditCategoryModal from "@/components/category/EditCategoryModal";
@@ -8,72 +8,105 @@ import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
 import { Category } from "@/types/category";
 import { CreateCategoryInput } from "@/types/category";
+
 import {
-  fetchCategories,
   addCategory,
   updateCategory,
   deleteCategory,
 } from "@/lib/services/categoryService";
 
+import { useCategoryContext } from "@/hooks/useCategoryContext";
+import { categoryActionTypes } from "@/context/CategoryContext";
+
 // Modal types
 type ModalType = "add" | "edit" | "delete" | null;
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { state, dispatch } = useCategoryContext();
+  const { categories, loading, error } = state;
+
   const [modal, setModal] = useState<ModalType>(null);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
 
-  useEffect(() => {
-    const fetchUserCategories = async () => {
-      const fetched = await fetchCategories();
-      setCategories(fetched);
-    };
-    fetchUserCategories();
-  }, []);
+  // useEffect(() => {
+  //   if (categories.length === 0 && !loading && !error) {
+  //     const retryFetch = async () => {
+  //       dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
+  //       try {
+  //         const fetched = await fetchCategories();
+  //         dispatch({ type: categoryActionTypes.SET_CATEGORIES, payload: fetched });
+  //       } catch (err) {
+  //         dispatch({
+  //           type: categoryActionTypes.SET_ERROR,
+  //           payload: err instanceof Error ? err.message : "Failed to fetch categories",
+  //         });
+  //       }
+  //     };
+
+  //     retryFetch();
+  //   }
+  // }, [categories.length, loading, error, dispatch]);
 
   // ─── Handlers ─────────────────────────────────────────
   const handleAddCategory = async (input: CreateCategoryInput) => {
     try {
+      dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
       const created = await addCategory(input);
-      if (created) setCategories((prev) => [created, ...prev]);
+      if (created) {
+        dispatch({ type: categoryActionTypes.ADD_CATEGORY, payload: created });
+      }
       closeModal();
     } catch (err) {
-      console.error("Add failed:", err);
+      dispatch({
+        type: categoryActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to add category",
+      });
+    } finally {
+      dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
     }
   };
 
   const handleEditCategory = async (updated: Category) => {
     try {
+      dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
       const saved = await updateCategory(updated);
-      if (saved) updateCategoryList(saved);
+      if (saved) {
+        dispatch({ type: categoryActionTypes.UPDATE_CATEGORY, payload: saved });
+      }
       closeModal();
     } catch (err) {
-      console.error("Update failed:", err);
+      dispatch({
+        type: categoryActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to update category",
+      });
+    } finally {
+      dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
     }
   };
 
   const handleDeleteCategory = async () => {
     if (!activeCategory) return;
     try {
+      dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
       const success = await deleteCategory(activeCategory.id);
-      if (success) removeCategoryFromList(activeCategory.id);
+      if (success) {
+        dispatch({
+          type: categoryActionTypes.DELETE_CATEGORY,
+          payload: activeCategory.id,
+        });
+      }
       closeModal();
     } catch (err) {
-      console.error("Delete failed:", err);
+      dispatch({
+        type: categoryActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to delete category",
+      });
+    } finally {
+      dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
     }
   };
 
-  // ─── Helpers ─────────────────────────────────────────
-  const updateCategoryList = (updated: Category) => {
-    setCategories((prev) =>
-      prev.map((cat) => (cat.id === updated.id ? updated : cat))
-    );
-  };
-
-  const removeCategoryFromList = (id: string) => {
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
-  };
-
+  // ─── Modal Helpers ────────────────────────────────────────
   const openModal = (type: ModalType, category: Category | null = null) => {
     setModal(type);
     setActiveCategory(category);
@@ -98,11 +131,17 @@ export default function Categories() {
       </div>
 
       <div className="max-w-5xl w-full mx-auto">
-        <CategoryTable
-          categories={categories}
-          onEdit={(cat) => openModal("edit", cat)}
-          onDelete={(cat) => openModal("delete", cat)}
-        />
+        {loading ? (
+          <p className="text-muted-foreground">Loading...</p>
+        ) : error ? (
+          <p className="text-destructive">{error}</p>
+        ) : (
+          <CategoryTable
+            categories={categories}
+            onEdit={(cat) => openModal("edit", cat)}
+            onDelete={(cat) => openModal("delete", cat)}
+          />
+        )}
       </div>
 
       {/* Modals */}

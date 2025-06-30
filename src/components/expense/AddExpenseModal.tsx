@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Category } from "@/types/category";
-import { CreateExpenseInput } from "@/types/expense";
-import { fetchCategories } from "@/lib/services/categoryService";
+import { useState } from "react";
 import { X } from "lucide-react";
+
+import { useCategoryContext } from "@/hooks/useCategoryContext";
+import { CreateExpenseInput } from "@/types/expense";
 
 type Props = {
   onClose: () => void;
@@ -15,24 +15,24 @@ const AddExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [expenseDate, setExpenseDate] = useState(() =>
+    new Date().toISOString().split("T")[0]
+  );
+  const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCategories().then(setCategories);
-  }, []);
+  const { state: categoryState } = useCategoryContext();
+  const { categories, loading: loadingCategories, error: categoryError } = categoryState;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setFormError("");
+    setIsSubmitting(true);
 
     const amt = parseFloat(amount);
     if (!name || isNaN(amt) || !categoryId) {
-      setError("Please fill in all fields correctly.");
-      setLoading(false);
+      setFormError("Please fill in all fields correctly.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -43,7 +43,7 @@ const AddExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
       expense_date: new Date(expenseDate),
     });
 
-    setLoading(false);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -65,6 +65,7 @@ const AddExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting}
             />
             <input
               type="number"
@@ -72,43 +73,55 @@ const AddExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting}
             />
+
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full border border-input bg-white dark:bg-zinc-800 text-black dark:text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={isSubmitting || loadingCategories}
             >
               <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option disabled>Loading...</option>
+              ) : categoryError ? (
+                <option disabled>Error loading categories</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
             </select>
+
             <input
               type="date"
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting}
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            {formError && <p className="text-sm text-destructive">{formError}</p>}
           </div>
 
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              disabled={loading}
+              disabled={isSubmitting}
               className="px-4 py-2 rounded-lg border border-border text-muted-foreground hover:bg-muted/30 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 transition"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 transition text-white"
             >
-              {loading ? "Adding..." : "Add"}
+              {isSubmitting ? "Adding..." : "Add"}
             </button>
           </div>
         </form>

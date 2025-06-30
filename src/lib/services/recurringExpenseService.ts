@@ -1,7 +1,7 @@
 // import { RecurringExpense } from "@/types/recurringExpense";
 import { createClient } from "@/lib/supabase/client";
 import { addExpense } from "@/lib/services/expenseService";
-import { PopulatedRecurringExpense, RecurringExpense } from "@/types/recurringExpense";
+import { AddRecurringExpenseResult, PopulatedRecurringExpense, RecurringExpense } from "@/types/recurringExpense";
 import { CreateRecurringExpenseInput } from "@/types/recurringExpense";
 
 export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpense[]> {
@@ -30,7 +30,7 @@ export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpens
 
 export async function addRecurringExpense(
   recurring: CreateRecurringExpenseInput
-): Promise<PopulatedRecurringExpense | null> {
+): Promise<AddRecurringExpenseResult | null> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -65,8 +65,10 @@ export async function addRecurringExpense(
   const todayStr = today.toISOString().split("T")[0];
   const startStr = start.toISOString().split("T")[0];
 
+  let generatedExpense = null;
+
   if (startStr <= todayStr) {
-    await addExpense({
+    generatedExpense = await addExpense({
       name: recurring.name,
       amount: recurring.amount,
       category_id: recurring.category_id,
@@ -75,8 +77,12 @@ export async function addRecurringExpense(
     });
   }
 
-  return data as PopulatedRecurringExpense;
+  return {
+    recurringExpense: data as PopulatedRecurringExpense,
+    generatedExpense,
+  };
 }
+
 export async function updateRecurringExpense(
   expense: Omit<RecurringExpense, "created_at" | "user_id">,
 ): Promise<PopulatedRecurringExpense | null> {

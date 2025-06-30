@@ -1,3 +1,5 @@
+import { PopulatedExpense } from "./expense";
+
 export type RecurringExpense = {
   id: string;
   user_id: string;
@@ -25,3 +27,9 @@ export type CreateRecurringExpenseInput = {
   start_date: Date;
   end_date?: Date | null;
 };
+
+export type AddRecurringExpenseResult = {
+  recurringExpense: PopulatedRecurringExpense;
+  generatedExpense?: PopulatedExpense | null; 
+};
+

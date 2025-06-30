@@ -1,47 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ExpenseTable from "@/components/expense/ExpenseTable";
 import AddExpenseModal from "@/components/expense/AddExpenseModal";
 import EditExpenseModal from "@/components/expense/EditExpenseModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
-import { Expense } from "@/types/expense";
-import { PopulatedExpense } from "@/types/expense";
-import { CreateExpenseInput } from "@/types/expense";
-import { fetchExpenses, addExpense, updateExpense, deleteExpense } from "@/lib/services/expenseService";
+import { CreateExpenseInput, Expense, PopulatedExpense } from "@/types/expense";
+import { addExpense, updateExpense, deleteExpense } from "@/lib/services/expenseService";
+
+import { useExpenseContext } from "@/hooks/useExpenseContext";
+import { expenseActionTypes } from "@/context/ExpenseContext";
 
 type ModalType = "add" | "edit" | "delete" | null;
 
 export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<PopulatedExpense[]>([]);
+  const { state, dispatch } = useExpenseContext();
+  const { expenses, loading, error } = state;
+
   const [modal, setModal] = useState<ModalType>(null);
   const [activeExpense, setActiveExpense] = useState<PopulatedExpense | null>(null);
 
-  useEffect(() => {
-    const loadExpenses = async () => {
-      const data = await fetchExpenses();
-      console.log("Fetched expenses:", data);
-      setExpenses(data);
-    };
-    loadExpenses();
-  }, []);
-
   // ─── Handlers ─────────────────────────────────────────
-  const handleAddExpense = async (
-    input: CreateExpenseInput
-  ) => {
-    const created = await addExpense(input);
-    if (!created) return;
-
-    setExpenses((prev) => [created, ...prev]); // no casting needed
-    closeModal();
+  const handleAddExpense = async (input: CreateExpenseInput) => {
+    dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
+    try {
+      const created = await addExpense(input);
+      if (created) {
+        dispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: created });
+      }
+      closeModal();
+    } catch (err) {
+      dispatch({
+        type: expenseActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to add expense",
+      });
+    } finally {
+      dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
+    }
   };
 
-
-
   const handleEditExpense = async (updated: PopulatedExpense) => {
-    console.log("Updating expense:", updated);
     const baseExpense: Expense = {
       id: updated.id,
       user_id: updated.user_id,
@@ -53,31 +52,46 @@ export default function ExpensesPage() {
       created_at: updated.created_at,
     };
 
-    const saved = await updateExpense(baseExpense);
-    if (saved) {
-      // Keep local state updated with possibly enriched PopulatedExpense
-      updateExpenseList(updated);
+    dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
+    try {
+      const saved = await updateExpense(baseExpense);
+      if (saved) {
+        dispatch({ type: expenseActionTypes.UPDATE_EXPENSE, payload: updated });
+      }
+      closeModal();
+    } catch (err) {
+      dispatch({
+        type: expenseActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to update expense",
+      });
+    } finally {
+      dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
     }
+  };
 
-    closeModal();
-  }
-
-  const handleDeleteCategory = async () => {
+  const handleDeleteExpense = async () => {
     if (!activeExpense) return;
-    const success = await deleteExpense(activeExpense.id);
-    if (success) {
-      setExpenses((prev) => prev.filter((exp) => exp.id !== activeExpense.id));
+    dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
+    try {
+      const success = await deleteExpense(activeExpense.id);
+      if (success) {
+        dispatch({
+          type: expenseActionTypes.DELETE_EXPENSE,
+          payload: activeExpense.id,
+        });
+      }
+      closeModal();
+    } catch (err) {
+      dispatch({
+        type: expenseActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to delete expense",
+      });
+    } finally {
+      dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
     }
-    closeModal();
   };
 
-  // ─── Helpers ─────────────────────────────────────────
-  const updateExpenseList = (updated: PopulatedExpense) => {
-    setExpenses((prev) =>
-      prev.map((exp) => (exp.id === updated.id ? updated : exp))
-    );
-  };
-
+  // ─── Modal Helpers ────────────────────────────────────────
   const openModal = (type: ModalType, expense: PopulatedExpense | null = null) => {
     setModal(type);
     setActiveExpense(expense);
@@ -101,13 +115,20 @@ export default function ExpensesPage() {
       </div>
 
       <div className="max-w-5xl w-full mx-auto">
-        <ExpenseTable
-          expense={expenses}
-          onEdit={(expense) => openModal("edit", expense)}
-          onDelete={(expense) => openModal("delete", expense)}
-        />
+        {loading ? (
+          <p className="text-muted-foreground">Loading...</p>
+        ) : error ? (
+          <p className="text-destructive">{error}</p>
+        ) : (
+          <ExpenseTable
+            expense={expenses}
+            onEdit={(expense) => openModal("edit", expense)}
+            onDelete={(expense) => openModal("delete", expense)}
+          />
+        )}
       </div>
 
+      {/* Modals */}
       {modal === "add" && (
         <AddExpenseModal onClose={closeModal} onAdd={handleAddExpense} />
       )}
@@ -120,10 +141,10 @@ export default function ExpensesPage() {
       )}
       {modal === "delete" && activeExpense && (
         <ConfirmDeleteModal
-          title="Delete Category"
+          title="Delete Expense"
           itemName={activeExpense.name}
           onClose={closeModal}
-          onConfirm={handleDeleteCategory}
+          onConfirm={handleDeleteExpense}
         />
       )}
     </div>

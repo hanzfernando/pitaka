@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { PopulatedRecurringExpense } from "@/types/recurringExpense";
-import { fetchCategories } from "@/lib/services/categoryService";
-import { Category } from "@/types/category";
+import { useCategoryContext } from "@/hooks/useCategoryContext";
 
 type EditRecurringExpenseProps = {
   recurringExpense: PopulatedRecurringExpense;
@@ -12,24 +11,29 @@ type EditRecurringExpenseProps = {
   onUpdate: (exp: PopulatedRecurringExpense) => void;
 };
 
-const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurringExpense, onClose, onUpdate}) => {
+const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({
+  recurringExpense,
+  onClose,
+  onUpdate,
+}) => {
   const [name, setName] = useState(recurringExpense.name);
   const [amount, setAmount] = useState(recurringExpense.amount.toString());
   const [categoryId, setCategoryId] = useState(recurringExpense.category_id);
-  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly" | "yearly">(recurringExpense.frequency);
+  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly" | "yearly">(
+    recurringExpense.frequency
+  );
   const [startDate, setStartDate] = useState(() =>
     new Date(recurringExpense.start_date).toISOString().split("T")[0]
   );
   const [endDate, setEndDate] = useState(
     recurringExpense.end_date ? new Date(recurringExpense.end_date).toISOString().split("T")[0] : ""
   );
-  const [categories, setCategories] = useState<Category[]>([]);
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchCategories().then(setCategories);
-  }, []);
+  const { state: categoryState } = useCategoryContext();
+  const { categories, loading: loadingCategories, error: categoryError } = categoryState;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +61,7 @@ const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurri
     setLoading(false);
     onClose();
   };
-  
+
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg w-full max-w-md p-6 space-y-6">
@@ -67,7 +71,11 @@ const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurri
             <X size={20} />
           </button>
         </div>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        {(error || categoryError) && (
+          <p className="text-sm text-destructive">{error || categoryError}</p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <input
@@ -88,13 +96,18 @@ const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurri
               value={categoryId ?? ""}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full border border-input bg-white dark:bg-zinc-800 text-black dark:text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={loadingCategories}
             >
               <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option disabled>Loading categories...</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
             </select>
             <select
               value={frequency}
@@ -121,7 +134,6 @@ const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurri
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
               placeholder="Optional End Date"
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
 
           <div className="flex justify-end gap-3">
@@ -144,7 +156,7 @@ const EditRecurringExpenseModal: React.FC<EditRecurringExpenseProps> = ({recurri
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default EditRecurringExpenseModal
+export default EditRecurringExpenseModal;

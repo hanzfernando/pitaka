@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Category } from "@/types/category";
+import { useState } from "react";
 import { CreateRecurringExpenseInput } from "@/types/recurringExpense";
-import { fetchCategories } from "@/lib/services/categoryService";
+import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { X } from "lucide-react";
 
 type Props = {
@@ -20,23 +19,21 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
     new Date().toISOString().split("T")[0]
   );
   const [endDate, setEndDate] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCategories().then(setCategories);
-  }, []);
+  const { state: categoryState } = useCategoryContext();
+  const { categories, loading: loadingCategories, error: categoryError } = categoryState;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setFormError("");
+    setIsSubmitting(true);
 
     const amt = parseFloat(amount);
     if (!name || isNaN(amt) || !categoryId || !frequency || !startDate) {
-      setError("Please fill in all required fields correctly.");
-      setLoading(false);
+      setFormError("Please fill in all required fields correctly.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -49,7 +46,7 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
       end_date: endDate ? new Date(endDate) : null,
     });
 
-    setLoading(false);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -71,6 +68,7 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting}
             />
             <input
               type="number"
@@ -78,18 +76,24 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting}
             />
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full border border-input bg-white dark:bg-zinc-800 text-black dark:text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={isSubmitting || loadingCategories}
             >
               <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option disabled>Loading categories...</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
             </select>
             <select
               value={frequency}
@@ -97,6 +101,7 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
                 setFrequency(e.target.value as "daily" | "weekly" | "monthly" | "yearly")
               }
               className="w-full border border-input bg-white dark:bg-zinc-800 text-black dark:text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={isSubmitting}
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -108,6 +113,7 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting}
             />
             <input
               type="date"
@@ -115,25 +121,27 @@ const AddRecurringExpenseModal: React.FC<Props> = ({ onClose, onAdd }) => {
               onChange={(e) => setEndDate(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
               placeholder="Optional End Date"
+              disabled={isSubmitting}
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            {categoryError && <p className="text-sm text-destructive">{categoryError}</p>}
           </div>
 
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              disabled={loading}
+              disabled={isSubmitting}
               className="px-4 py-2 rounded-lg border border-border text-muted-foreground hover:bg-muted/30 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting || loadingCategories}
               className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition"
             >
-              {loading ? "Adding..." : "Add"}
+              {isSubmitting ? "Adding..." : "Add"}
             </button>
           </div>
         </form>

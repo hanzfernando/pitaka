@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { PopulatedExpense } from "@/types/expense";
-import { fetchCategories } from "@/lib/services/categoryService";
-import { Category } from "@/types/category";
+import { useState } from "react";
 import { X } from "lucide-react";
+import { PopulatedExpense } from "@/types/expense";
+import { useCategoryContext } from "@/hooks/useCategoryContext";
 
 type EditExpenseProps = {
   expense: PopulatedExpense;
@@ -19,52 +18,51 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
   const [expenseDate, setExpenseDate] = useState(
     () => new Date(expense.expense_date).toISOString().split("T")[0]
   );
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchCategories().then(setCategories);
-  }, []);
+  const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { state: categoryState } = useCategoryContext();
+  const { categories, loading: loadingCategories, error: categoryError } = categoryState;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setFormError("");
+    setIsSubmitting(true);
 
     const amt = parseFloat(amount);
     if (!name.trim()) {
-      setError("Name cannot be empty.");
-      setLoading(false);
+      setFormError("Name cannot be empty.");
+      setIsSubmitting(false);
       return;
     }
     if (isNaN(amt) || amt <= 0) {
-      setError("Amount must be a valid number greater than 0.");
-      setLoading(false);
+      setFormError("Amount must be a valid number greater than 0.");
+      setIsSubmitting(false);
       return;
     }
     if (!categoryId) {
-      setError("Please select a category.");
-      setLoading(false);
+      setFormError("Please select a category.");
+      setIsSubmitting(false);
       return;
     }
 
-    // 🔍 Find the category details for populated field
-  const selectedCategory = categories.find((cat) => cat.id === categoryId);
+    const selectedCategory = categories.find((cat) => cat.id === categoryId);
+    if (!selectedCategory) console.warn("Category not found for ID:", categoryId);
 
-  const updatedExpense: PopulatedExpense = {
-    ...expense,
-    name,
-    amount: amt,
-    category_id: categoryId,
-    expense_date: new Date(expenseDate),
-    categories: selectedCategory
-      ? { name: selectedCategory.name, color: selectedCategory.color }
-      : null, // fallback just in case
-  };
+    const updatedExpense: PopulatedExpense = {
+      ...expense,
+      name,
+      amount: amt,
+      category_id: categoryId,
+      expense_date: new Date(expenseDate),
+      categories: selectedCategory
+        ? { name: selectedCategory.name, color: selectedCategory.color }
+        : null,
+    };
 
     onUpdate(updatedExpense);
-    setLoading(false);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -86,6 +84,7 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting || loadingCategories}
             />
             <input
               type="number"
@@ -93,43 +92,52 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting || loadingCategories}
             />
             <select
               value={categoryId ?? ""}
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full border border-input bg-white dark:bg-zinc-800 text-black dark:text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              disabled={isSubmitting || loadingCategories}
             >
               <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option disabled>Loading categories...</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
             </select>
             <input
               type="date"
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
               className="w-full border border-input bg-muted text-foreground rounded-lg px-4 py-2"
+              disabled={isSubmitting || loadingCategories}
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            {categoryError && <p className="text-sm text-destructive">{categoryError}</p>}
           </div>
 
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              disabled={loading}
+              disabled={isSubmitting}
               className="px-4 py-2 rounded-lg border border-border text-muted-foreground hover:bg-muted/30 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="px-4 py-2 rounded-lg bg-primary  text-black dark:text-white hover:bg-primary/90 transition"
+              disabled={isSubmitting || loadingCategories}
+              className="px-4 py-2 rounded-lg bg-primary text-black dark:text-white hover:bg-primary/90 transition"
             >
-              {loading ? "Saving..." : "Save"}
+              {isSubmitting ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
