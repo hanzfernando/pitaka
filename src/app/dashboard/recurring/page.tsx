@@ -23,49 +23,54 @@ import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
 import { recurringExpenseActionTypes } from "@/context/RecurringExpenseContext";
 import { useExpenseContext } from "@/hooks/useExpenseContext";
 import { expenseActionTypes } from "@/context/ExpenseContext";
+import { useCategoryContext } from "@/hooks/useCategoryContext";
+import { populateRecurringExpenses } from "@/lib/utils/populateRecurringExpense"; // <-- import helper
 
 type ModalType = "add" | "edit" | "delete" | null;
 
 export default function RecurringPage() {
-  const { state, dispatch: recurringExpenseDispatch } = useRecurringExpenseContext();
-  const { recurringExpenses, loading, error } = state;
+  const { state: recurringState, dispatch: recurringExpenseDispatch } = useRecurringExpenseContext();
+  const { recurringExpenses, loading, error } = recurringState;
 
+  const { state: categoryState } = useCategoryContext();
   const { dispatch: expenseDispatch } = useExpenseContext();
 
   const [modal, setModal] = useState<ModalType>(null);
   const [activeRecurringExpense, setActiveRecurringExpense] = useState<PopulatedRecurringExpense | null>(null);
 
+  const populatedRecurringExpenses = populateRecurringExpenses(recurringExpenses, categoryState.categories);
+
   // ─── Handlers ─────────────────────────────────────────
   const handleAddRecurringExpense = async (input: CreateRecurringExpenseInput) => {
-  recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: true });
-  try {
-    const result = await addRecurringExpense(input);
-    if (result) {
-      const { recurringExpense, generatedExpense } = result;
+    recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: true });
+    try {
+      const result = await addRecurringExpense(input);
+      if (result) {
+        const { recurringExpense, generatedExpense } = result;
 
-      recurringExpenseDispatch({
-        type: recurringExpenseActionTypes.ADD_RECURRING_EXPENSE,
-        payload: recurringExpense,
-      });
-
-      if (generatedExpense) {
-        expenseDispatch({
-          type: expenseActionTypes.ADD_EXPENSE,
-          payload: generatedExpense,
+        recurringExpenseDispatch({
+          type: recurringExpenseActionTypes.ADD_RECURRING_EXPENSE,
+          payload: recurringExpense,
         });
-      }
 
-      closeModal();
+        if (generatedExpense) {
+          expenseDispatch({
+            type: expenseActionTypes.ADD_EXPENSE,
+            payload: generatedExpense,
+          });
+        }
+
+        closeModal();
+      }
+    } catch (err) {
+      recurringExpenseDispatch({
+        type: recurringExpenseActionTypes.SET_ERROR,
+        payload: err instanceof Error ? err.message : "Failed to add recurring expense",
+      });
+    } finally {
+      recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
     }
-  } catch (err) {
-    recurringExpenseDispatch({
-      type: recurringExpenseActionTypes.SET_ERROR,
-      payload: err instanceof Error ? err.message : "Failed to add recurring expense",
-    });
-  } finally {
-    recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
-  }
-};
+  };
 
   const handleEditRecurringExpense = async (updated: PopulatedRecurringExpense) => {
     const baseRecurringExpense: RecurringExpense = {
@@ -153,7 +158,7 @@ export default function RecurringPage() {
           <p className="text-destructive">{error}</p>
         ) : (
           <RecurringExpenseTable
-            recurringExpenses={recurringExpenses}
+            recurringExpenses={populatedRecurringExpenses}
             onEdit={(item) => openModal("edit", item)}
             onDelete={(item) => openModal("delete", item)}
           />

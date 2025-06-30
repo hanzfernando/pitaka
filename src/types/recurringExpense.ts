@@ -1,4 +1,5 @@
-import { PopulatedExpense } from "./expense";
+// import { PopulatedExpense } from "./expense";
+import { Expense } from "@/types/expense";
 
 export type RecurringExpense = {
   id: string;
@@ -29,7 +30,7 @@ export type CreateRecurringExpenseInput = {
 };
 
 export type AddRecurringExpenseResult = {
-  recurringExpense: PopulatedRecurringExpense;
-  generatedExpense?: PopulatedExpense | null; 
+  recurringExpense: RecurringExpense;
+  generatedExpense?: Expense | null; 
 };
 

@@ -1,10 +1,11 @@
 // import { RecurringExpense } from "@/types/recurringExpense";
 import { createClient } from "@/lib/supabase/client";
 import { addExpense } from "@/lib/services/expenseService";
-import { AddRecurringExpenseResult, PopulatedRecurringExpense, RecurringExpense } from "@/types/recurringExpense";
+// import { PopulatedRecurringExpense } from "@/types/recurringExpense";
+import { AddRecurringExpenseResult, RecurringExpense } from "@/types/recurringExpense";
 import { CreateRecurringExpenseInput } from "@/types/recurringExpense";
 
-export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpense[]> {
+export async function fetchRecurringExpenses(): Promise<RecurringExpense[]> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -13,19 +14,20 @@ export async function fetchRecurringExpenses(): Promise<PopulatedRecurringExpens
   }
   const { data, error } = await supabase
     .from("recurring_expenses")
-    .select(`
-      *,
-        category:categories (
-        name,
-        color
-      )
-    `)
+    // .select(`
+    //   *,
+    //     category:categories (
+    //     name,
+    //     color
+    //   )
+    // `)
+    .select("*")
     .eq("user_id", user.id);
   if (error) {
     console.error("Error fetching recurring expenses:", error.message);
     return [];
   }
-  return data as PopulatedRecurringExpense[];
+  return data as RecurringExpense[];
 }
 
 export async function addRecurringExpense(
@@ -43,13 +45,14 @@ export async function addRecurringExpense(
   const { data, error } = await supabase
     .from("recurring_expenses")
     .insert({ ...recurring, user_id: user.id })
-    .select(`
-      *,
-      category:categories (
-        name,
-        color
-      )
-    `)
+    // .select(`
+    //   *,
+    //   category:categories (
+    //     name,
+    //     color
+    //   )
+    // `)
+    .select("*")
     .single();
 
   if (error) {
@@ -78,14 +81,14 @@ export async function addRecurringExpense(
   }
 
   return {
-    recurringExpense: data as PopulatedRecurringExpense,
+    recurringExpense: data as RecurringExpense,
     generatedExpense,
   };
 }
 
 export async function updateRecurringExpense(
   expense: Omit<RecurringExpense, "created_at" | "user_id">,
-): Promise<PopulatedRecurringExpense | null> {
+): Promise<RecurringExpense | null> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -99,13 +102,7 @@ export async function updateRecurringExpense(
     .update(expense)
     .eq("id", expense.id)
     .eq("user_id", user.id)
-    .select(`
-      *,
-      category:categories (
-        name,
-        color
-      )
-    `)
+    .select("*")
     .single();
 
   if (error) {
@@ -113,7 +110,7 @@ export async function updateRecurringExpense(
     return null;
   }
 
-  return data as PopulatedRecurringExpense;
+  return data as RecurringExpense;
 }
 
 export async function deleteRecurringExpense(id: string): Promise<boolean> {

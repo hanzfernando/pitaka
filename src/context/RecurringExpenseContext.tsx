@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useEffect, useReducer } from "react";
-import { PopulatedRecurringExpense } from "@/types/recurringExpense";
+// import { PopulatedRecurringExpense } from "@/types/recurringExpense";
+import { RecurringExpense } from "@/types/recurringExpense";
 import { fetchRecurringExpenses } from "@/lib/services/recurringExpenseService";
 
 // ─── Action Constants ────────────────────────────────
@@ -14,15 +15,15 @@ const SET_ERROR = "SET_ERROR";
 
 // ─── Types ────────────────────────────────────────────
 type RecurringExpenseState = {
-  recurringExpenses: PopulatedRecurringExpense[];
+  recurringExpenses: RecurringExpense[];
   loading: boolean;
   error: string | null;
 };
 
 type RecurringExpenseAction =
-  | { type: typeof SET_RECURRING_EXPENSES; payload: PopulatedRecurringExpense[] }
-  | { type: typeof ADD_RECURRING_EXPENSE; payload: PopulatedRecurringExpense }
-  | { type: typeof UPDATE_RECURRING_EXPENSE; payload: PopulatedRecurringExpense }
+  | { type: typeof SET_RECURRING_EXPENSES; payload: RecurringExpense[] }
+  | { type: typeof ADD_RECURRING_EXPENSE; payload: RecurringExpense }
+  | { type: typeof UPDATE_RECURRING_EXPENSE; payload: RecurringExpense }
   | { type: typeof DELETE_RECURRING_EXPENSE; payload: string }
   | { type: typeof SET_LOADING; payload: boolean }
   | { type: typeof SET_ERROR; payload: string | null };
