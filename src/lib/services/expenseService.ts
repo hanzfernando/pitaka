@@ -1,10 +1,10 @@
 import { Expense } from "@/types/expense";
-import { PopulatedExpense } from "@/types/expense";
+// import { PopulatedExpense } from "@/types/expense";
 import { CreateExpenseInput } from "@/types/expense";
 import { createClient } from "@/lib/supabase/client";
 import { getMonthRange } from "../utils/getMonthDateRange";
 
-export async function fetchExpenses(): Promise<PopulatedExpense[]> {
+export async function fetchExpenses(): Promise<Expense[]> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -12,18 +12,19 @@ export async function fetchExpenses(): Promise<PopulatedExpense[]> {
 
   const { data, error } = await supabase
     .from("expenses")
-    .select(`
-      *,
-      categories:category_id (
-        name,
-        color
-      ),
-      recurring_expenses:recurring_id (
-        frequency,
-        start_date,
-        end_date
-      )
-    `)
+    // .select(`
+    //   *,
+    //   categories:category_id (
+    //     name,
+    //     color
+    //   ),
+    //   recurring_expenses:recurring_id (
+    //     frequency,
+    //     start_date,
+    //     end_date
+    //   )
+    // `)
+    .select("*")
     .eq("user_id", user.id)
     .order("expense_date", { ascending: false });
 
@@ -32,14 +33,14 @@ export async function fetchExpenses(): Promise<PopulatedExpense[]> {
     return [];
   }
 
-  return data as PopulatedExpense[];
+  return data as Expense[];
 }
 
 
 
 export async function addExpense(
   expense: CreateExpenseInput
-): Promise<PopulatedExpense | null> {
+): Promise<Expense | null> {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -90,7 +91,7 @@ export async function addExpense(
     return null;
   }
 
-  return data as PopulatedExpense;
+  return data as Expense;
 }
 
 export async function updateExpense(

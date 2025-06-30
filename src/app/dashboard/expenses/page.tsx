@@ -12,11 +12,26 @@ import { addExpense, updateExpense, deleteExpense } from "@/lib/services/expense
 import { useExpenseContext } from "@/hooks/useExpenseContext";
 import { expenseActionTypes } from "@/context/ExpenseContext";
 
+import { populateExpenses } from "@/lib/utils/populateExpense";
+import { useCategoryContext } from "@/hooks/useCategoryContext";
+import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
+
+
 type ModalType = "add" | "edit" | "delete" | null;
 
 export default function ExpensesPage() {
-  const { state, dispatch } = useExpenseContext();
-  const { expenses, loading, error } = state;
+  const { state: expenseState, dispatch } = useExpenseContext();
+  const { state: categoryState } = useCategoryContext();
+  const { state: recurringState } = useRecurringExpenseContext();
+
+  const rawExpenses = expenseState.expenses;
+  const populatedExpenses = populateExpenses(
+    rawExpenses,
+    categoryState.categories,
+    recurringState.recurringExpenses
+  );
+
+  const { loading, error } = expenseState;
 
   const [modal, setModal] = useState<ModalType>(null);
   const [activeExpense, setActiveExpense] = useState<PopulatedExpense | null>(null);
@@ -121,7 +136,7 @@ export default function ExpensesPage() {
           <p className="text-destructive">{error}</p>
         ) : (
           <ExpenseTable
-            expense={expenses}
+            expense={populatedExpenses}
             onEdit={(expense) => openModal("edit", expense)}
             onDelete={(expense) => openModal("delete", expense)}
           />

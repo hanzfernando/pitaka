@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useEffect, useReducer } from "react";
-import { PopulatedExpense } from "@/types/expense";
+// import { PopulatedExpense } from "@/types/expense";
+import { Expense } from "@/types/expense";
 import { fetchExpenses } from "@/lib/services/expenseService";
 
 // ─── Action Constants ─────────────────────────────────
@@ -14,15 +15,15 @@ const SET_ERROR = "SET_ERROR";
 
 // ─── Types ────────────────────────────────────────────
 type ExpenseState = {
-  expenses: PopulatedExpense[];
+  expenses: Expense[];
   loading: boolean;
   error: string | null;
 };
 
 type ExpenseAction =
-  | { type: typeof SET_EXPENSES; payload: PopulatedExpense[] }
-  | { type: typeof ADD_EXPENSE; payload: PopulatedExpense }
-  | { type: typeof UPDATE_EXPENSE; payload: PopulatedExpense }
+  | { type: typeof SET_EXPENSES; payload: Expense[] }
+  | { type: typeof ADD_EXPENSE; payload: Expense }
+  | { type: typeof UPDATE_EXPENSE; payload: Expense }
   | { type: typeof DELETE_EXPENSE; payload: string }
   | { type: typeof SET_LOADING; payload: boolean }
   | { type: typeof SET_ERROR; payload: string | null };
