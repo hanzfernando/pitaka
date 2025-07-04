@@ -31,6 +31,7 @@ import { useExpenseContext } from "@/hooks/useExpenseContext";
 import { expenseActionTypes } from "@/context/ExpenseContext";
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { populateRecurringExpenses } from "@/lib/utils/populateRecurringExpense";
+import { withToast } from "@/lib/utils/withToast";
 
 type ModalType = "add" | "edit" | "delete" | null;
 type FilterMode = "activeNow" | "range" | "all";
@@ -87,38 +88,38 @@ export default function RecurringPage() {
     setSelectedFrequency("");
   };
 
+  // ─── Handlers ─────────────────────────────────────────
   const handleAddRecurringExpense = async (input: CreateRecurringExpenseInput) => {
     recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: true });
-    try {
-      const result = await addRecurringExpense(input);
-      if (result) {
-        const { recurringExpense, generatedExpense } = result;
 
-        recurringExpenseDispatch({
-          type: recurringExpenseActionTypes.ADD_RECURRING_EXPENSE,
-          payload: recurringExpense,
-        });
-
-        for (const expense of generatedExpense || []) {
-          console.log("Generated expense:", expense);
-          expenseDispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
-        }
-        
-
-        closeModal();
+    const result = await withToast(
+      () => addRecurringExpense(input),
+      {
+        success: "Recurring expense added!",
+        error: "Failed to add recurring expense",
       }
-    } catch (err) {
+    );
+
+    if (result) {
+      const { recurringExpense, generatedExpense } = result;
+
       recurringExpenseDispatch({
-        type: recurringExpenseActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to add recurring expense",
+        type: recurringExpenseActionTypes.ADD_RECURRING_EXPENSE,
+        payload: recurringExpense,
       });
-    } finally {
-      recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
+
+      for (const expense of generatedExpense || []) {
+        expenseDispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
+      }
+
+      closeModal();
     }
+
+    recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
   };
 
   const handleEditRecurringExpense = async (updated: PopulatedRecurringExpense) => {
-    const baseRecurringExpense: RecurringExpense = {
+    const base: RecurringExpense = {
       id: updated.id,
       user_id: updated.user_id,
       category_id: updated.category_id,
@@ -131,48 +132,53 @@ export default function RecurringPage() {
     };
 
     recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: true });
-    try {
-      const saved = await updateRecurringExpense(baseRecurringExpense);
-      if (saved) {
-        recurringExpenseDispatch({
-          type: recurringExpenseActionTypes.UPDATE_RECURRING_EXPENSE,
-          payload: updated,
-        });
-        closeModal();
+
+    const saved = await withToast(
+      () => updateRecurringExpense(base),
+      {
+        success: "Recurring expense updated!",
+        error: "Failed to update recurring expense",
       }
-    } catch (err) {
+    );
+
+    if (saved) {
       recurringExpenseDispatch({
-        type: recurringExpenseActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to update recurring expense",
+        type: recurringExpenseActionTypes.UPDATE_RECURRING_EXPENSE,
+        payload: updated,
       });
-    } finally {
-      recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
+      closeModal();
     }
+
+    recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
   };
+
 
   const handleDeleteRecurringExpense = async () => {
     if (!activeRecurringExpense) return;
 
     recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: true });
-    try {
-      const deleted = await deleteRecurringExpense(activeRecurringExpense.id);
-      if (deleted) {
-        recurringExpenseDispatch({
-          type: recurringExpenseActionTypes.DELETE_RECURRING_EXPENSE,
-          payload: activeRecurringExpense.id,
-        });
-        closeModal();
+
+    const success = await withToast(
+      () => deleteRecurringExpense(activeRecurringExpense.id),
+      {
+        success: "Recurring expense deleted!",
+        error: "Failed to delete recurring expense",
       }
-    } catch (err) {
+    );
+
+    if (success) {
       recurringExpenseDispatch({
-        type: recurringExpenseActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to delete recurring expense",
+        type: recurringExpenseActionTypes.DELETE_RECURRING_EXPENSE,
+        payload: activeRecurringExpense.id,
       });
-    } finally {
-      recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
+      closeModal();
     }
+
+    recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: false });
   };
 
+
+  // ─── Modal Helpers ────────────────────────────────────────
   const closeModal = () => {
     setModal(null);
     setActiveRecurringExpense(null);

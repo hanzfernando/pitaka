@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { UserProvider } from "./UserContext";
 import { CategoryProvider } from "./CategoryContext";
 import { ExpenseProvider } from "./ExpenseContext";
 import { RecurringExpenseProvider } from "./RecurringExpenseContext";
@@ -11,13 +12,15 @@ type Props = {
 
 const AppProvider = ({ children }: Props) => {
   return (
-    <CategoryProvider>
-      <ExpenseProvider>
-        <RecurringExpenseProvider>
-          {children}
-        </RecurringExpenseProvider>
-      </ExpenseProvider>
-    </CategoryProvider>
+    <UserProvider>
+      <CategoryProvider>
+        <ExpenseProvider>
+          <RecurringExpenseProvider>
+            {children}
+          </RecurringExpenseProvider>
+        </ExpenseProvider>
+      </CategoryProvider>
+    </UserProvider>
   );
 };
 

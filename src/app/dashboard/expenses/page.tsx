@@ -33,6 +33,7 @@ import { expenseActionTypes } from "@/context/ExpenseContext";
 import { populateExpenses } from "@/lib/utils/populateExpense";
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
+import { withToast } from "@/lib/utils/withToast";
 
 type ModalType = "add" | "edit" | "delete" | null;
 type FilterMode = "month" | "range";
@@ -131,21 +132,21 @@ export default function ExpensesPage() {
   // ─── Handlers ───────────────────────────────
   const handleAddExpense = async (input: CreateExpenseInput) => {
     dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
-    try {
-      const created = await addExpense(input);
-      if (created) {
-        dispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: created });
+
+    const created = await withToast(
+      () => addExpense(input),
+      {
+        success: "Expense added successfully!",
+        error: "Failed to add expense",
       }
+    );
+
+    if (created) {
+      dispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: created });
       closeModal();
-    } catch (err) {
-      dispatch({
-        type: expenseActionTypes.SET_ERROR,
-        payload:
-          err instanceof Error ? err.message : "Failed to add expense",
-      });
-    } finally {
-      dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
     }
+
+    dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
   };
 
   const handleEditExpense = async (updated: PopulatedExpense) => {
@@ -161,48 +162,51 @@ export default function ExpensesPage() {
     };
 
     dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
-    try {
-      const saved = await updateExpense(baseExpense);
-      if (saved) {
-        dispatch({
-          type: expenseActionTypes.UPDATE_EXPENSE,
-          payload: updated,
-        });
+
+    const saved = await withToast(
+      () => updateExpense(baseExpense),
+      {
+        success: "Expense updated!",
+        error: "Failed to update expense",
       }
-      closeModal();
-    } catch (err) {
+    );
+
+    if (saved) {
       dispatch({
-        type: expenseActionTypes.SET_ERROR,
-        payload:
-          err instanceof Error ? err.message : "Failed to update expense",
+        type: expenseActionTypes.UPDATE_EXPENSE,
+        payload: updated,
       });
-    } finally {
-      dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
+      closeModal();
     }
+
+    dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
   };
+
 
   const handleDeleteExpense = async () => {
     if (!activeExpense) return;
+
     dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
-    try {
-      const success = await deleteExpense(activeExpense.id);
-      if (success) {
-        dispatch({
-          type: expenseActionTypes.DELETE_EXPENSE,
-          payload: activeExpense.id,
-        });
+
+    const success = await withToast(
+      () => deleteExpense(activeExpense.id),
+      {
+        success: "Expense deleted!",
+        error: "Failed to delete expense",
       }
-      closeModal();
-    } catch (err) {
+    );
+
+    if (success) {
       dispatch({
-        type: expenseActionTypes.SET_ERROR,
-        payload:
-          err instanceof Error ? err.message : "Failed to delete expense",
+        type: expenseActionTypes.DELETE_EXPENSE,
+        payload: activeExpense.id,
       });
-    } finally {
-      dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
+      closeModal();
     }
+
+    dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
   };
+
 
   // ─── Modal Helpers ──────────────────────────
   const openModal = (type: ModalType, expense: PopulatedExpense | null = null) => {

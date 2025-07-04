@@ -17,6 +17,7 @@ import {
 
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { categoryActionTypes } from "@/context/CategoryContext";
+import { withToast } from "@/lib/utils/withToast";
 
 // Modal types
 type ModalType = "add" | "edit" | "delete" | null;
@@ -28,83 +29,71 @@ export default function Categories() {
   const [modal, setModal] = useState<ModalType>(null);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
 
-  // useEffect(() => {
-  //   if (categories.length === 0 && !loading && !error) {
-  //     const retryFetch = async () => {
-  //       dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
-  //       try {
-  //         const fetched = await fetchCategories();
-  //         dispatch({ type: categoryActionTypes.SET_CATEGORIES, payload: fetched });
-  //       } catch (err) {
-  //         dispatch({
-  //           type: categoryActionTypes.SET_ERROR,
-  //           payload: err instanceof Error ? err.message : "Failed to fetch categories",
-  //         });
-  //       }
-  //     };
-
-  //     retryFetch();
-  //   }
-  // }, [categories.length, loading, error, dispatch]);
-
   // ─── Handlers ─────────────────────────────────────────
   const handleAddCategory = async (input: CreateCategoryInput) => {
-    try {
-      dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
-      const created = await addCategory(input);
-      if (created) {
-        dispatch({ type: categoryActionTypes.ADD_CATEGORY, payload: created });
+    dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
+
+    const created = await withToast(
+      () => addCategory(input),
+      {
+        success: "Category added successfully!",
+        error: "Failed to add category",
       }
+    );
+
+    if (created) {
+      dispatch({ type: categoryActionTypes.ADD_CATEGORY, payload: created });
       closeModal();
-    } catch (err) {
-      dispatch({
-        type: categoryActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to add category",
-      });
-    } finally {
-      dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
     }
+
+    dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
   };
 
+
   const handleEditCategory = async (updated: Category) => {
-    try {
-      dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
-      const saved = await updateCategory(updated);
-      if (saved) {
-        dispatch({ type: categoryActionTypes.UPDATE_CATEGORY, payload: saved });
+    dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
+
+    const saved = await withToast(
+      () => updateCategory(updated),
+      {
+        success: "Category updated!",
+        error: "Failed to update category",
       }
+    );
+
+    if (saved) {
+      dispatch({ type: categoryActionTypes.UPDATE_CATEGORY, payload: saved });
       closeModal();
-    } catch (err) {
-      dispatch({
-        type: categoryActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to update category",
-      });
-    } finally {
-      dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
     }
+
+    dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
   };
+
 
   const handleDeleteCategory = async () => {
     if (!activeCategory) return;
-    try {
-      dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
-      const success = await deleteCategory(activeCategory.id);
-      if (success) {
-        dispatch({
-          type: categoryActionTypes.DELETE_CATEGORY,
-          payload: activeCategory.id,
-        });
+
+    dispatch({ type: categoryActionTypes.SET_LOADING, payload: true });
+
+    const success = await withToast(
+      () => deleteCategory(activeCategory.id),
+      {
+        success: "Category deleted.",
+        error: "Failed to delete category",
       }
-      closeModal();
-    } catch (err) {
+    );
+
+    if (success) {
       dispatch({
-        type: categoryActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to delete category",
+        type: categoryActionTypes.DELETE_CATEGORY,
+        payload: activeCategory.id,
       });
-    } finally {
-      dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
+      closeModal();
     }
+
+    dispatch({ type: categoryActionTypes.SET_LOADING, payload: false });
   };
+
 
   // ─── Modal Helpers ────────────────────────────────────────
   const openModal = (type: ModalType, category: Category | null = null) => {
