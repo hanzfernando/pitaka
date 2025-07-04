@@ -178,7 +178,6 @@ export async function syncRecurringExpenses(): Promise<Expense[]> {
 
       const inserted = await addExpense(expense);
       if (inserted) {
-        console.log("✅ Synced expense for:", date.toDateString());
         newExpenses.push(inserted); // collect for return
       } else {
         console.warn("⚠️ Failed to insert for:", date.toDateString());
@@ -201,7 +200,6 @@ async function generateExpenseFromStartDate(
     recurring.frequency,  
   );
 
-  console.log("Generated dates for recurring expense:", dates);
 
   for (const date of dates) {
     const expense: CreateExpenseInput = {
@@ -212,7 +210,6 @@ async function generateExpenseFromStartDate(
       expense_date: date,
     };
 
-    console.log("Generated expense:", expense);
 
     const result = await addExpense(expense);
     if (result) {

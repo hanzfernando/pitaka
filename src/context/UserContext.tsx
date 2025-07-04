@@ -59,7 +59,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: userActionTypes.SET_LOADING, payload: true });
       try {
         const displayName = await getUserDisplayName();
-        console.log("Fetched display name:", displayName);
         dispatch({
           type: userActionTypes.SET_DISPLAY_NAME,
           payload: displayName || "user",

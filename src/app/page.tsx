@@ -15,7 +15,6 @@ export default function LandingPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      console.log('User:', user);
 
       if (user) {
         router.replace('/dashboard');

@@ -50,7 +50,6 @@ export async function addExpense(
     return null;
   }
 
-  console.log("Adding expense:", expense);
 
   const { data, error } = await supabase
     .from("expenses")
