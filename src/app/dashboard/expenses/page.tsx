@@ -1,13 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import {
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+  setMonth,
+  getMonth,
+} from "date-fns";
+
 import ExpenseTable from "@/components/expense/ExpenseTable";
 import AddExpenseModal from "@/components/expense/AddExpenseModal";
 import EditExpenseModal from "@/components/expense/EditExpenseModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 
-import { CreateExpenseInput, Expense, PopulatedExpense } from "@/types/expense";
-import { addExpense, updateExpense, deleteExpense } from "@/lib/services/expenseService";
+import {
+  CreateExpenseInput,
+  Expense,
+  PopulatedExpense,
+} from "@/types/expense";
+import {
+  addExpense,
+  updateExpense,
+  deleteExpense,
+  fetchExpenses,
+} from "@/lib/services/expenseService";
+import { syncRecurringExpenses } from "@/lib/services/recurringExpenseService";
 
 import { useExpenseContext } from "@/hooks/useExpenseContext";
 import { expenseActionTypes } from "@/context/ExpenseContext";
@@ -16,27 +34,101 @@ import { populateExpenses } from "@/lib/utils/populateExpense";
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
 
-
 type ModalType = "add" | "edit" | "delete" | null;
+type FilterMode = "month" | "range";
 
 export default function ExpensesPage() {
   const { state: expenseState, dispatch } = useExpenseContext();
   const { state: categoryState } = useCategoryContext();
   const { state: recurringState } = useRecurringExpenseContext();
 
+  const [modal, setModal] = useState<ModalType>(null);
+  const [activeExpense, setActiveExpense] = useState<PopulatedExpense | null>(
+    null
+  );
+
+  const now = new Date();
+  const currentMonth = getMonth(now);
+
+  // Filter state
+  const [filterMode, setFilterMode] = useState<FilterMode>("month");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+
+  const { loading, error } = expenseState;
   const rawExpenses = expenseState.expenses;
+
+  const hasSyncedRef = useRef(false);
+  
   const populatedExpenses = populateExpenses(
     rawExpenses,
     categoryState.categories,
     recurringState.recurringExpenses
   );
 
-  const { loading, error } = expenseState;
+  const filteredExpenses = populatedExpenses.filter((exp) => {
+    const date = new Date(exp.expense_date);
 
-  const [modal, setModal] = useState<ModalType>(null);
-  const [activeExpense, setActiveExpense] = useState<PopulatedExpense | null>(null);
+    if (filterMode === "month") {
+      const start = startOfMonth(setMonth(now, selectedMonth));
+      const end = endOfMonth(start);
+      return isWithinInterval(date, { start, end });
+    }
 
-  // ─── Handlers ─────────────────────────────────────────
+    if (
+      filterMode === "range" &&
+      customStartDate &&
+      customEndDate
+    ) {
+      return isWithinInterval(date, {
+        start: customStartDate,
+        end: customEndDate,
+      });
+    }
+
+    return true;
+  });
+
+  
+  useEffect(() => {
+    const initialize = async () => {
+      dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
+
+      try {
+        const expenses = await fetchExpenses();
+        dispatch({ type: expenseActionTypes.SET_EXPENSES, payload: expenses });
+
+        if (!hasSyncedRef.current) {
+          hasSyncedRef.current = true;
+          const newlyCreated = await syncRecurringExpenses();
+
+          if (newlyCreated.length > 0) {
+            for (const expense of newlyCreated) {
+              const alreadyExists = expenses.some((e) => e.id === expense.id);
+              if (!alreadyExists) {
+                dispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
+              }
+            }
+          }
+        }
+
+      } catch (error) {
+        dispatch({
+          type: expenseActionTypes.SET_ERROR,
+          payload: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
+      }
+    };
+
+    initialize();
+  }, []);
+
+
+
+  // ─── Handlers ───────────────────────────────
   const handleAddExpense = async (input: CreateExpenseInput) => {
     dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
     try {
@@ -48,7 +140,8 @@ export default function ExpensesPage() {
     } catch (err) {
       dispatch({
         type: expenseActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to add expense",
+        payload:
+          err instanceof Error ? err.message : "Failed to add expense",
       });
     } finally {
       dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
@@ -71,13 +164,17 @@ export default function ExpensesPage() {
     try {
       const saved = await updateExpense(baseExpense);
       if (saved) {
-        dispatch({ type: expenseActionTypes.UPDATE_EXPENSE, payload: updated });
+        dispatch({
+          type: expenseActionTypes.UPDATE_EXPENSE,
+          payload: updated,
+        });
       }
       closeModal();
     } catch (err) {
       dispatch({
         type: expenseActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to update expense",
+        payload:
+          err instanceof Error ? err.message : "Failed to update expense",
       });
     } finally {
       dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
@@ -99,14 +196,15 @@ export default function ExpensesPage() {
     } catch (err) {
       dispatch({
         type: expenseActionTypes.SET_ERROR,
-        payload: err instanceof Error ? err.message : "Failed to delete expense",
+        payload:
+          err instanceof Error ? err.message : "Failed to delete expense",
       });
     } finally {
       dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
     }
   };
 
-  // ─── Modal Helpers ────────────────────────────────────────
+  // ─── Modal Helpers ──────────────────────────
   const openModal = (type: ModalType, expense: PopulatedExpense | null = null) => {
     setModal(type);
     setActiveExpense(expense);
@@ -117,6 +215,14 @@ export default function ExpensesPage() {
     setActiveExpense(null);
   };
 
+  const handleClearFilter = () => {
+    setFilterMode("month");
+    setSelectedMonth(currentMonth);
+    setCustomStartDate(null);
+    setCustomEndDate(null);
+  };
+
+  // ─── Render ─────────────────────────────────
   return (
     <div className="flex flex-col gap-6 w-full h-full px-4 py-10 bg-background text-foreground">
       <div className="flex justify-between items-center max-w-5xl w-full mx-auto">
@@ -129,6 +235,63 @@ export default function ExpensesPage() {
         </button>
       </div>
 
+      {/* Filter Controls */}
+      <div className="flex flex-wrap gap-4 items-center max-w-5xl w-full mx-auto">
+        <select
+          className="border border-input rounded px-3 py-1 dark:bg-background dark:text-white"
+          value={filterMode}
+          onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+        >
+          <option value="month">Monthly</option>
+          <option value="range">Custom Range</option>
+        </select>
+
+        {filterMode === "month" && (
+          <select
+            className="border border-input rounded px-3 py-1 dark:bg-background dark:text-white"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          >
+            {Array.from({ length: 12 }).map((_, idx) => {
+              const label = new Date(2000, idx).toLocaleString("default", {
+                month: "long",
+              });
+              return (
+                <option key={idx} value={idx}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
+        )}
+
+        {filterMode === "range" && (
+          <>
+            <label className="text-sm text-muted-foreground dark:text-white">From</label>
+            <input
+              type="date"
+              className="border border-input rounded px-2 py-1 dark:bg-background dark:text-white"
+              value={customStartDate?.toISOString().split("T")[0] || ""}
+              onChange={(e) => setCustomStartDate(new Date(e.target.value))}
+            />
+            <label className="text-sm text-muted-foreground dark:text-white">To</label>
+            <input
+              type="date"
+              className="border border-input rounded px-2 py-1 dark:bg-background dark:text-white"
+              value={customEndDate?.toISOString().split("T")[0] || ""}
+              onChange={(e) => setCustomEndDate(new Date(e.target.value))}
+            />
+            <button
+              onClick={handleClearFilter}
+              className="text-sm text-blue-600 underline dark:text-blue-400"
+            >
+              Clear Filter
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Expense Table */}
       <div className="max-w-5xl w-full mx-auto">
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
@@ -136,7 +299,7 @@ export default function ExpensesPage() {
           <p className="text-destructive">{error}</p>
         ) : (
           <ExpenseTable
-            expense={populatedExpenses}
+            expense={filteredExpenses}
             onEdit={(expense) => openModal("edit", expense)}
             onDelete={(expense) => openModal("delete", expense)}
           />

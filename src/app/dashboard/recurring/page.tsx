@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import {
+  isWithinInterval,
+  parseISO,
+  startOfDay,
+  endOfDay,
+} from "date-fns";
 
 import RecurringExpenseTable from "@/components/recurring/RecurringExpenseTable";
 import AddRecurringExpenseModal from "@/components/recurring/AddRecurringExpenseModal";
@@ -24,9 +30,10 @@ import { recurringExpenseActionTypes } from "@/context/RecurringExpenseContext";
 import { useExpenseContext } from "@/hooks/useExpenseContext";
 import { expenseActionTypes } from "@/context/ExpenseContext";
 import { useCategoryContext } from "@/hooks/useCategoryContext";
-import { populateRecurringExpenses } from "@/lib/utils/populateRecurringExpense"; // <-- import helper
+import { populateRecurringExpenses } from "@/lib/utils/populateRecurringExpense";
 
 type ModalType = "add" | "edit" | "delete" | null;
+type FilterMode = "activeNow" | "range" | "all";
 
 export default function RecurringPage() {
   const { state: recurringState, dispatch: recurringExpenseDispatch } = useRecurringExpenseContext();
@@ -38,9 +45,48 @@ export default function RecurringPage() {
   const [modal, setModal] = useState<ModalType>(null);
   const [activeRecurringExpense, setActiveRecurringExpense] = useState<PopulatedRecurringExpense | null>(null);
 
+  const [filterMode, setFilterMode] = useState<FilterMode>("activeNow");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [selectedFrequency, setSelectedFrequency] = useState("");
+
   const populatedRecurringExpenses = populateRecurringExpenses(recurringExpenses, categoryState.categories);
 
-  // ─── Handlers ─────────────────────────────────────────
+  const today = new Date();
+
+  const filteredRecurringExpenses = populatedRecurringExpenses.filter((item) => {
+    const start = item.start_date instanceof Date ? item.start_date : parseISO(item.start_date);
+    const end = item.end_date
+      ? (item.end_date instanceof Date ? item.end_date : parseISO(item.end_date))
+      : null;
+    const frequencyMatch = selectedFrequency === "" || item.frequency === selectedFrequency;
+
+    if (filterMode === "activeNow") {
+      return isWithinInterval(today, {
+        start: startOfDay(start),
+        end: end ? endOfDay(end) : endOfDay(today),
+      }) && frequencyMatch;
+    }
+
+    if (filterMode === "range" && startDate && endDate) {
+      const from = parseISO(startDate);
+      const to = parseISO(endDate);
+      return (
+        isWithinInterval(start, { start: from, end: to }) ||
+        (end && isWithinInterval(end, { start: from, end: to }))
+      ) && frequencyMatch;
+    }
+
+    return frequencyMatch;
+  });
+
+  const handleClearFilters = () => {
+    setFilterMode("activeNow");
+    setStartDate("");
+    setEndDate("");
+    setSelectedFrequency("");
+  };
+
   const handleAddRecurringExpense = async (input: CreateRecurringExpenseInput) => {
     recurringExpenseDispatch({ type: recurringExpenseActionTypes.SET_LOADING, payload: true });
     try {
@@ -53,12 +99,11 @@ export default function RecurringPage() {
           payload: recurringExpense,
         });
 
-        if (generatedExpense) {
-          expenseDispatch({
-            type: expenseActionTypes.ADD_EXPENSE,
-            payload: generatedExpense,
-          });
+        for (const expense of generatedExpense || []) {
+          console.log("Generated expense:", expense);
+          expenseDispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
         }
+        
 
         closeModal();
       }
@@ -128,7 +173,6 @@ export default function RecurringPage() {
     }
   };
 
-  // ─── Helpers ─────────────────────────────────────────
   const closeModal = () => {
     setModal(null);
     setActiveRecurringExpense(null);
@@ -142,12 +186,63 @@ export default function RecurringPage() {
   return (
     <div className="flex flex-col gap-6 w-full h-full px-4 py-10 bg-background text-foreground">
       <div className="flex justify-between items-center max-w-5xl w-full mx-auto">
-        <h1 className="text-3xl font-bold text-primary">Your Recurring Expenses 📂</h1>
+        <h1 className="text-3xl font-bold text-primary">Your Recurring Expenses ♻️</h1>
         <button
           onClick={() => openModal("add")}
           className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow hover:brightness-110 transition"
         >
           + Add Recurring Expense
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 items-center max-w-5xl w-full mx-auto">
+        <select
+          className="border border-input rounded px-3 py-1 dark:bg-background dark:text-white"
+          value={filterMode}
+          onChange={(e) => setFilterMode(e.target.value as FilterMode)}
+        >
+          <option value="activeNow">Active Now</option>
+          <option value="range">Custom Range</option>
+          <option value="all">Show All</option>
+        </select>
+
+        {filterMode === "range" && (
+          <>
+            <label className="text-sm dark:text-white">From</label>
+            <input
+              type="date"
+              className="border rounded px-2 py-1 dark:bg-background dark:text-white"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <label className="text-sm dark:text-white">To</label>
+            <input
+              type="date"
+              className="border rounded px-2 py-1 dark:bg-background dark:text-white"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </>
+        )}
+
+        <select
+          className="border border-input rounded px-3 py-1 dark:bg-background dark:text-white"
+          value={selectedFrequency}
+          onChange={(e) => setSelectedFrequency(e.target.value)}
+        >
+          <option value="">All Frequencies</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+
+        <button
+          onClick={handleClearFilters}
+          className="text-sm text-blue-600 underline dark:text-blue-400"
+        >
+          Clear Filters
         </button>
       </div>
 
@@ -158,14 +253,13 @@ export default function RecurringPage() {
           <p className="text-destructive">{error}</p>
         ) : (
           <RecurringExpenseTable
-            recurringExpenses={populatedRecurringExpenses}
+            recurringExpenses={filteredRecurringExpenses}
             onEdit={(item) => openModal("edit", item)}
             onDelete={(item) => openModal("delete", item)}
           />
         )}
       </div>
 
-      {/* Modals */}
       {modal === "add" && (
         <AddRecurringExpenseModal onClose={closeModal} onAdd={handleAddRecurringExpense} />
       )}

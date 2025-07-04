@@ -31,6 +31,6 @@ export type CreateRecurringExpenseInput = {
 
 export type AddRecurringExpenseResult = {
   recurringExpense: RecurringExpense;
-  generatedExpense?: Expense | null; 
+  generatedExpense?: Expense[] | null; 
 };
 

@@ -2,7 +2,8 @@ import { Expense } from "@/types/expense";
 // import { PopulatedExpense } from "@/types/expense";
 import { CreateExpenseInput } from "@/types/expense";
 import { createClient } from "@/lib/supabase/client";
-import { getMonthRange } from "../utils/getMonthDateRange";
+import { formatDateOnly } from "../utils/dateUtil";
+// import { getMonthRange } from "../utils/dateUtil";
 
 export async function fetchExpenses(): Promise<Expense[]> {
   const supabase = createClient();
@@ -49,41 +50,16 @@ export async function addExpense(
     return null;
   }
 
-  // ─── Check Recurring Duplication ───
-  if (expense.recurring_id) {
-    const expenseDate = new Date(expense.expense_date);
-    const [startOfMonth, endOfMonth] = getMonthRange(expenseDate);
-
-    const { data: existing } = await supabase
-      .from("expenses")
-      .select("id")
-      .eq("recurring_id", expense.recurring_id)
-      .gte("expense_date", startOfMonth)
-      .lte("expense_date", endOfMonth)
-      .maybeSingle();
-
-
-    if (existing) {
-      console.log("Already added recurring for this month.");
-      return null;
-    }
-  }
+  console.log("Adding expense:", expense);
 
   const { data, error } = await supabase
     .from("expenses")
-    .insert({ ...expense, user_id: user.id })
-    .select(`
-      *,
-      categories (
-        name,
-        color
-      ),
-      recurring_expenses (
-        frequency,
-        start_date,
-        end_date
-      )
-    `)
+    .insert({ 
+      ...expense, 
+      user_id: user.id,
+      expense_date: formatDateOnly(expense.expense_date), // safe
+    })
+    .select("*")
     .single();
 
   if (error) {
