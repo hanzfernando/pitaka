@@ -18,7 +18,6 @@ export const metadata: Metadata = {
   description: "Pitaka helps you manage your daily spending, track expenses, and take control of your finances with a clean and minimalist interface.",
   keywords: ["expense tracker", "budgeting", "personal finance", "Pitaka", "money management"],
   authors: [{ name: "Hanz Fernando" }],
-  themeColor: "#1f2937",
   icons: {
     icon: [
       { url: "/pitaka-icon.png", sizes: "32x32", type: "image/png" },
