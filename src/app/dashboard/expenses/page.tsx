@@ -34,6 +34,7 @@ import { populateExpenses } from "@/lib/utils/populateExpense";
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
 import { withToast } from "@/lib/utils/withToast";
+import ExpenseCardList from "@/components/expense/ExpenseCardList";
 
 type ModalType = "add" | "edit" | "delete" | null;
 type FilterMode = "month" | "range";
@@ -302,11 +303,26 @@ export default function ExpensesPage() {
         ) : error ? (
           <p className="text-destructive">{error}</p>
         ) : (
-          <ExpenseTable
-            expense={filteredExpenses}
-            onEdit={(expense) => openModal("edit", expense)}
-            onDelete={(expense) => openModal("delete", expense)}
-          />
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <ExpenseTable
+                expense={filteredExpenses}
+                onEdit={(expense) => openModal("edit", expense)}
+                onDelete={(expense) => openModal("delete", expense)}
+              />
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden">
+              <ExpenseCardList
+                expenses={filteredExpenses}
+                onEdit={(expense) => openModal("edit", expense)}
+                onDelete={(expense) => openModal("delete", expense)}
+              />
+            </div>
+          </>
+
         )}
       </div>
 

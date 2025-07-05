@@ -18,6 +18,7 @@ import {
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { categoryActionTypes } from "@/context/CategoryContext";
 import { withToast } from "@/lib/utils/withToast";
+import CategoryCardList from "@/components/category/CategoryCardList";
 
 // Modal types
 type ModalType = "add" | "edit" | "delete" | null;
@@ -125,11 +126,25 @@ export default function Categories() {
         ) : error ? (
           <p className="text-destructive">{error}</p>
         ) : (
-          <CategoryTable
-            categories={categories}
-            onEdit={(cat) => openModal("edit", cat)}
-            onDelete={(cat) => openModal("delete", cat)}
-          />
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <CategoryTable
+                categories={categories}
+                onEdit={(cat) => openModal("edit", cat)}
+                onDelete={(cat) => openModal("delete", cat)}
+              />
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden">
+              <CategoryCardList
+                categories={categories}
+                onEdit={(cat) => openModal("edit", cat)}
+                onDelete={(cat) => openModal("delete", cat)}
+              />
+            </div>
+          </>
         )}
       </div>
 

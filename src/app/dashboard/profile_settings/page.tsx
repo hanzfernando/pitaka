@@ -110,7 +110,9 @@ const handleUpdatePassword = () => {
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-6">
-      <h2 className="text-xl font-semibold">Profile Settings</h2>
+      <div className="flex justify-between items-center max-w-5xl w-full mx-auto">
+        <h1 className="text-3xl font-bold text-primary">Profile Settings</h1>       
+      </div>
 
       <div>
         <label className="block font-medium mb-1">Display Name</label>

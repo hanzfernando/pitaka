@@ -32,6 +32,7 @@ import { expenseActionTypes } from "@/context/ExpenseContext";
 import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { populateRecurringExpenses } from "@/lib/utils/populateRecurringExpense";
 import { withToast } from "@/lib/utils/withToast";
+import RecurringExpenseCardList from "@/components/recurring/RecurringExpenseCardList";
 
 type ModalType = "add" | "edit" | "delete" | null;
 type FilterMode = "activeNow" | "range" | "all";
@@ -258,11 +259,25 @@ export default function RecurringPage() {
         ) : error ? (
           <p className="text-destructive">{error}</p>
         ) : (
-          <RecurringExpenseTable
-            recurringExpenses={filteredRecurringExpenses}
-            onEdit={(item) => openModal("edit", item)}
-            onDelete={(item) => openModal("delete", item)}
-          />
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <RecurringExpenseTable
+                recurringExpenses={filteredRecurringExpenses}
+                onEdit={(item) => openModal("edit", item)}
+                onDelete={(item) => openModal("delete", item)}
+              />
+            </div>
+
+            {/* Mobile Card List */}
+            <div className="md:hidden">
+              <RecurringExpenseCardList
+                recurringExpenses={filteredRecurringExpenses}
+                onEdit={(item) => openModal("edit", item)}
+                onDelete={(item) => openModal("delete", item)}
+              />
+            </div>
+          </>
         )}
       </div>
 
