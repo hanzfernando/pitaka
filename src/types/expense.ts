@@ -10,7 +10,7 @@ export type Expense = {
 };
 
 export type PopulatedExpense = Expense & {
-  categories: {
+  category: {
     name: string;
     color: string;
   } | null;

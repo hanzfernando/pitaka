@@ -37,7 +37,7 @@ import { withToast } from "@/lib/utils/withToast";
 import ExpenseCardList from "@/components/expense/ExpenseCardList";
 
 type ModalType = "add" | "edit" | "delete" | null;
-type FilterMode = "month" | "range";
+type FilterMode = "month" | "range" | "showAll";
 
 export default function ExpensesPage() {
   const { state: expenseState, dispatch } = useExpenseContext();
@@ -87,6 +87,10 @@ export default function ExpensesPage() {
         start: customStartDate,
         end: customEndDate,
       });
+    }
+
+    if (filterMode === "showAll") {
+      return exp;
     }
 
     return true;
@@ -249,6 +253,7 @@ export default function ExpensesPage() {
         >
           <option value="month">Monthly</option>
           <option value="range">Custom Range</option>
+          <option value="showAll">Show All</option>
         </select>
 
         {filterMode === "month" && (

@@ -18,7 +18,7 @@ export function populateExpenses(
 
     return {
       ...expense,
-      categories: category
+      category: category
         ? { name: category.name, color: category.color }
         : null,
       recurring_expenses: recurring

@@ -14,7 +14,8 @@ const ExpenseTable: React.FC<Props> = ({ expense, onEdit, onDelete }) => {
   const [search, setSearch] = useState("");
 
   const filtered = expense.filter((exp) =>
-    exp.name.toLowerCase().includes(search.toLowerCase())
+    exp.name.toLowerCase().includes(search.toLowerCase()) ||
+    exp.category?.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -55,11 +56,11 @@ const ExpenseTable: React.FC<Props> = ({ expense, onEdit, onDelete }) => {
                   <td className="px-4 py-3 font-medium text-foreground">{exp.name}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      {exp.categories?.name ?? "Uncategorized"}
-                      {exp.categories?.color && (
+                      {exp.category?.name ?? "Uncategorized"}
+                      {exp.category?.color && (
                         <span
                           className="w-3 h-3 rounded-full border"
-                          style={{ backgroundColor: `#${exp.categories.color}` }}
+                          style={{ backgroundColor: `#${exp.category.color}` }}
                         />
                       )}
                     </div>
