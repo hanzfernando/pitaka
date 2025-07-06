@@ -5,6 +5,7 @@ import CategoryTable from "@/components/category/CategoryTable";
 import AddCategoryModal from "@/components/category/AddCategoryModal";
 import EditCategoryModal from "@/components/category/EditCategoryModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 import { Category } from "@/types/category";
 import { CreateCategoryInput } from "@/types/category";
@@ -121,9 +122,9 @@ export default function Categories() {
       </div>
 
       <div className="max-w-5xl w-full mx-auto">
-        {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
-        ) : error ? (
+        <LoadingOverlay show={loading} />
+
+        { error ? (
           <p className="text-destructive">{error}</p>
         ) : (
           <>

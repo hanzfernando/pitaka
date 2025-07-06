@@ -12,6 +12,7 @@ import RecurringExpenseTable from "@/components/recurring/RecurringExpenseTable"
 import AddRecurringExpenseModal from "@/components/recurring/AddRecurringExpenseModal";
 import EditRecurringExpenseModal from "@/components/recurring/EditRecurringExpenseModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 import {
   RecurringExpense,
@@ -254,9 +255,9 @@ export default function RecurringPage() {
       </div>
 
       <div className="max-w-5xl w-full mx-auto">
-        {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
-        ) : error ? (
+        <LoadingOverlay show={loading} />
+
+        {error ? (
           <p className="text-destructive">{error}</p>
         ) : (
           <>

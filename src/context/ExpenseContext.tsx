@@ -85,6 +85,11 @@ export const ExpenseProvider = ({ children }: { children: React.ReactNode }) => 
           type: SET_ERROR,
           payload: error instanceof Error ? error.message : "Unknown error",
         });
+      } finally {
+        dispatch({
+          type: SET_LOADING, 
+          payload: false
+        })
       }
     };
 

@@ -25,7 +25,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             </button>
           )}
 
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto relative">
             <div className="max-w-5xl mx-auto w-full px-4 py-10 bg-background text-foreground">
               {children}
               <Toaster richColors position="top-right" />

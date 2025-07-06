@@ -99,10 +99,16 @@ export const RecurringExpenseProvider = ({ children }: { children: React.ReactNo
           type: SET_ERROR,
           payload: error instanceof Error ? error.message : "Unknown error",
         });
+      } finally {
+        dispatch({
+          type: SET_LOADING,
+          payload: false
+        })
       }
     };
 
     initialize();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

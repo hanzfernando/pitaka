@@ -77,6 +77,8 @@ export const CategoryProvider = ({ children }: { children: React.ReactNode }) =>
         dispatch({ type: SET_CATEGORIES, payload: categories });
       } catch (error) {
         dispatch({ type: SET_ERROR, payload: error instanceof Error ? error.message : "Unknown error" });
+      } finally {
+        dispatch({ type: SET_LOADING, payload: false})
       }
     };
 

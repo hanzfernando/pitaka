@@ -29,6 +29,7 @@ import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
 import { withToast } from "@/lib/utils/withToast";
 import ExpenseCardList from "@/components/expense/ExpenseCardList";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 import { filterExpenses } from "@/lib/utils/expenseFilter";
 
@@ -278,9 +279,9 @@ export default function ExpensesPage() {
 
       {/* Expense Table */}
       <div className="max-w-5xl w-full mx-auto">
-        {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
-        ) : error ? (
+        <LoadingOverlay show={loading} />
+
+        {error ? (
           <p className="text-destructive">{error}</p>
         ) : (
           <>
