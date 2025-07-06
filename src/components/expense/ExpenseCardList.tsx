@@ -48,7 +48,7 @@ const ExpenseCardList: React.FC<Props> = ({ expenses, onEdit, onDelete }) => {
           <div className="text-sm text-muted-foreground space-y-1">
             <div>
               <span className="font-medium text-foreground">Category: </span>
-              {exp.categories?.name ?? "Uncategorized"}
+              {exp.category?.name ?? "Uncategorized"}
             </div>
             <div>
               <span className="font-medium text-foreground">Amount: </span>

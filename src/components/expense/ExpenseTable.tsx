@@ -3,6 +3,7 @@
 import { PopulatedExpense } from "@/types/expense";
 import { Pencil, Trash2, RefreshCcw } from "lucide-react";
 import { useState } from "react";
+import { searchExpenses } from "@/lib/utils/expenseFilter";
 
 type Props = {
   expense: PopulatedExpense[];
@@ -12,11 +13,8 @@ type Props = {
 
 const ExpenseTable: React.FC<Props> = ({ expense, onEdit, onDelete }) => {
   const [search, setSearch] = useState("");
-
-  const filtered = expense.filter((exp) =>
-    exp.name.toLowerCase().includes(search.toLowerCase()) ||
-    exp.category?.name.toLowerCase().includes(search.toLowerCase())
-  );
+  
+  const filtered = searchExpenses(expense, search);
 
   return (
     <div className="w-full rounded-2xl border border-border bg-white dark:bg-zinc-800 shadow-md p-6 space-y-6">

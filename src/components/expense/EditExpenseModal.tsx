@@ -56,7 +56,7 @@ const EditExpenseModal: React.FC<EditExpenseProps> = ({ expense, onClose, onUpda
       amount: amt,
       category_id: categoryId,
       expense_date: new Date(expenseDate),
-      categories: selectedCategory
+      category: selectedCategory
         ? { name: selectedCategory.name, color: selectedCategory.color }
         : null,
     };

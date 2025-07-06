@@ -2,10 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  startOfMonth,
-  endOfMonth,
-  isWithinInterval,
-  setMonth,
   getMonth,
 } from "date-fns";
 
@@ -35,6 +31,8 @@ import { useCategoryContext } from "@/hooks/useCategoryContext";
 import { useRecurringExpenseContext } from "@/hooks/useRecurringExpenseContext";
 import { withToast } from "@/lib/utils/withToast";
 import ExpenseCardList from "@/components/expense/ExpenseCardList";
+
+import { filterExpenses } from "@/lib/utils/expenseFilter";
 
 type ModalType = "add" | "edit" | "delete" | null;
 type FilterMode = "month" | "range" | "showAll";
@@ -69,33 +67,14 @@ export default function ExpensesPage() {
     recurringState.recurringExpenses
   );
 
-  const filteredExpenses = populatedExpenses.filter((exp) => {
-    const date = new Date(exp.expense_date);
-
-    if (filterMode === "month") {
-      const start = startOfMonth(setMonth(now, selectedMonth));
-      const end = endOfMonth(start);
-      return isWithinInterval(date, { start, end });
-    }
-
-    if (
-      filterMode === "range" &&
-      customStartDate &&
-      customEndDate
-    ) {
-      return isWithinInterval(date, {
-        start: customStartDate,
-        end: customEndDate,
-      });
-    }
-
-    if (filterMode === "showAll") {
-      return exp;
-    }
-
-    return true;
+  const filteredExpenses = filterExpenses({
+    expenses: populatedExpenses,
+    filterMode,
+    selectedMonth,
+    customStartDate,
+    customEndDate,
+    now,
   });
-
   
   useEffect(() => {
     const initialize = async () => {
