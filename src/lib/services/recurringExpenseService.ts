@@ -4,7 +4,7 @@ import { addExpense } from "@/lib/services/expenseService";
 // import { PopulatedRecurringExpense } from "@/types/recurringExpense";
 import { AddRecurringExpenseResult, RecurringExpense } from "@/types/recurringExpense";
 import { CreateRecurringExpenseInput } from "@/types/recurringExpense";
-import { getRecurringDateRange, getExpectedRecurringDates } from "../utils/dateUtil";
+import { getExpectedRecurringDates, getMissingDates, getRecurringDateRange } from "../utils/dateUtil";
 import { CreateExpenseInput, Expense } from "@/types/expense";
 import { startOfDay } from "date-fns";
 
@@ -17,19 +17,15 @@ export async function fetchRecurringExpenses(): Promise<RecurringExpense[]> {
   }
   const { data, error } = await supabase
     .from("recurring_expenses")
-    // .select(`
-    //   *,
-    //     category:categories (
-    //     name,
-    //     color
-    //   )
-    // `)
     .select("*")
     .eq("user_id", user.id);
   if (error) {
     console.error("Error fetching recurring expenses:", error.message);
     return [];
   }
+
+  console.log("fetch recurring")
+  console.log(data)
   return data as RecurringExpense[];
 }
 
@@ -44,28 +40,27 @@ export async function addRecurringExpense(
     return null;
   }
 
-  // 1. Insert recurring expense
+  // Step 1: Add the recurring config
   const { data, error } = await supabase
     .from("recurring_expenses")
     .insert({ ...recurring, user_id: user.id })
     .select("*")
     .single();
 
-  if (error) {
-    console.error("Error adding recurring expense:", error.message);
+  if (error || !data) {
+    console.error("Error adding recurring expense:", error?.message);
     return null;
   }
 
-  const generatedExpense = await generateExpenseFromStartDate(
-    recurring,
-    data.id,
-  );
+  // Step 2: Generate expenses based on frequency, date range
+  const generatedExpenses = await generateExpensesFromRecurring(data);
 
   return {
     recurringExpense: data as RecurringExpense,
-    generatedExpense,
+    generatedExpense: generatedExpenses,
   };
 }
+
 
 export async function updateRecurringExpense(
   expense: Omit<RecurringExpense, "created_at" | "user_id">,
@@ -117,7 +112,6 @@ export async function deleteRecurringExpense(id: string): Promise<boolean> {
   return true;
 }
 
-
 export async function syncRecurringExpenses(): Promise<Expense[]> {
   const supabase = createClient();
   const {
@@ -130,92 +124,83 @@ export async function syncRecurringExpenses(): Promise<Expense[]> {
     return [];
   }
 
-  const { data: recurrences, error: recurrenceError } = await supabase
-    .from("recurring_expenses")
-    .select("*")
-    .eq("user_id", user.id);
-
-  if (recurrenceError || !recurrences) {
-    console.error("Failed to fetch recurring expenses:", recurrenceError?.message);
-    return [];
-  }
-
-  const newExpenses: Expense[] = [];
+  const recurrences = await fetchRecurringExpenses();
+  const allNewExpenses: Expense[] = [];
 
   for (const rec of recurrences) {
     const start = startOfDay(new Date(rec.start_date));
     const end = rec.end_date ? startOfDay(new Date(rec.end_date)) : startOfDay(new Date());
 
-    // 1. Fetch ALL existing expense dates
-    const { data: existingExpenses, error: fetchError } = await supabase
-      .from("expenses")
-      .select("expense_date")
-      .eq("recurring_id", rec.id);
+    const existingDates = await getExistingExpenseDates(rec.id);
+    // console.log("existingDates: ", existingDates)
+    const expectedDates = getExpectedRecurringDates(start, rec.frequency, end);
+    // console.log("expectedDates: ", expectedDates)
+    const missingDates = getMissingDates(expectedDates, existingDates);
+    // console.log("missingDates: ", missingDates)
 
-    if (fetchError) {
-      console.error("Failed to fetch expenses for recurring:", fetchError.message);
-      continue;
-    }
+    const newInputs: CreateExpenseInput[] = missingDates.map((date) => ({
+      name: rec.name,
+      amount: rec.amount,
+      category_id: rec.category_id,
+      recurring_id: rec.id,
+      expense_date: date,
+    }));
 
-    const existingDates = (existingExpenses || []).map(e =>
-      startOfDay(new Date(e.expense_date)).toISOString()
-    );
-
-    const allExpectedDates = getExpectedRecurringDates(start, rec.frequency, end);
-
-    const missingDates = allExpectedDates.filter(date =>
-      !existingDates.includes(date.toISOString())
-    );
-
-    for (const date of missingDates) {
-      const expense = {
-        name: rec.name,
-        amount: rec.amount,
-        category_id: rec.category_id,
-        recurring_id: rec.id,
-        expense_date: date,
-      };
-
-      const inserted = await addExpense(expense);
-      if (inserted) {
-        newExpenses.push(inserted); // collect for return
-      } else {
-        console.warn("⚠️ Failed to insert for:", date.toDateString());
-      }
-    }
+    const inserted = await insertExpenses(newInputs);
+    allNewExpenses.push(...inserted);
   }
 
-  return newExpenses;
+  return allNewExpenses;
 }
 
 
-// Helper functions
-async function generateExpenseFromStartDate(
-  recurring: CreateRecurringExpenseInput,
-  recurringId: string,
-) {
-  const generatedExpenses = [];
+async function generateExpensesFromRecurring(
+  recurring: RecurringExpense
+): Promise<Expense[]> {
+  const results: Expense[] = [];
+
   const dates = getRecurringDateRange(
     recurring.start_date,
-    recurring.frequency,  
+    recurring.frequency,
+    recurring.end_date
   );
 
-
   for (const date of dates) {
-    const expense: CreateExpenseInput = {
+    const input: CreateExpenseInput = {
       name: recurring.name,
       amount: recurring.amount,
       category_id: recurring.category_id,
-      recurring_id: recurringId,
+      recurring_id: recurring.id,
       expense_date: date,
     };
 
-
-    const result = await addExpense(expense);
-    if (result) {
-      generatedExpenses.push(result);
-    }
+    const result = await addExpense(input);
+    if (result) results.push(result);
   }
 
-  return generatedExpenses;
+  return results;
+}
+
+async function getExistingExpenseDates(recurringId: string): Promise<Date[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("expense_date")
+    .eq("recurring_id", recurringId);
+
+  if (error || !data) {
+    console.error("Error fetching existing expenses:", error?.message);
+    return [];
+  }
+
+  return data.map((e) => startOfDay(new Date(e.expense_date)));
+}
+
+async function insertExpenses(inputs: CreateExpenseInput[]): Promise<Expense[]> {
+  const results: Expense[] = [];
+  for (const input of inputs) {
+    const result = await addExpense(input);
+    if (result) results.push(result);
+  }
+  return results;
 }

@@ -22,6 +22,11 @@ export function filterExpenses({
   customEndDate,
   now = new Date(),
 }: FilterOptions): PopulatedExpense[] {
+
+  if (filterMode === "range" && (!customStartDate || !customEndDate || customStartDate > customEndDate)) {
+    return [];
+  }
+
   return expenses.filter((exp) => {
     const date = new Date(exp.expense_date);
 
@@ -31,10 +36,10 @@ export function filterExpenses({
       return isWithinInterval(date, { start, end });
     }
 
-    if (filterMode === "range" && customStartDate && customEndDate) {
+    if (filterMode === "range") {
       return isWithinInterval(date, {
-        start: customStartDate,
-        end: customEndDate,
+        start: customStartDate!,
+        end: customEndDate!,
       });
     }
 
@@ -42,7 +47,7 @@ export function filterExpenses({
       return true;
     }
 
-    return true;
+    return false;
   });
 }
 

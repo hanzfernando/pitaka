@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useEffect, useReducer } from "react";
-// import { PopulatedRecurringExpense } from "@/types/recurringExpense";
 import { RecurringExpense } from "@/types/recurringExpense";
-import { fetchRecurringExpenses } from "@/lib/services/recurringExpenseService";
+import { fetchRecurringExpenses, syncRecurringExpenses } from "@/lib/services/recurringExpenseService"; // 🟢 make sure sync is imported
+import { useExpenseContext } from "@/hooks/useExpenseContext"; // 🟢 to dispatch new synced expenses
+import { expenseActionTypes } from "@/context/ExpenseContext"; // 🟢 to dispatch to ExpenseContext
 
 // ─── Action Constants ────────────────────────────────
 const SET_RECURRING_EXPENSES = "SET_RECURRING_EXPENSES";
@@ -77,12 +78,22 @@ export const RecurringExpenseContext = createContext<{
 export const RecurringExpenseProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(recurringExpenseReducer, initialState);
 
+  const { dispatch: expenseDispatch } = useExpenseContext(); 
+
   useEffect(() => {
-    const loadRecurringExpenses = async () => {
+    const initialize = async () => {
       dispatch({ type: SET_LOADING, payload: true });
       try {
-        const data = await fetchRecurringExpenses();
-        dispatch({ type: SET_RECURRING_EXPENSES, payload: data });
+        const newlyCreated = await syncRecurringExpenses();
+        if (newlyCreated.length > 0) {
+          for (const expense of newlyCreated) {
+            expenseDispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
+          }
+        }
+
+        const recurrences = await fetchRecurringExpenses();
+        dispatch({ type: SET_RECURRING_EXPENSES, payload: recurrences });
+
       } catch (error) {
         dispatch({
           type: SET_ERROR,
@@ -91,7 +102,7 @@ export const RecurringExpenseProvider = ({ children }: { children: React.ReactNo
       }
     };
 
-    loadRecurringExpenses();
+    initialize();
   }, []);
 
   return (

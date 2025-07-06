@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   getMonth,
 } from "date-fns";
@@ -19,9 +19,7 @@ import {
   addExpense,
   updateExpense,
   deleteExpense,
-  fetchExpenses,
 } from "@/lib/services/expenseService";
-import { syncRecurringExpenses } from "@/lib/services/recurringExpenseService";
 
 import { useExpenseContext } from "@/hooks/useExpenseContext";
 import { expenseActionTypes } from "@/context/ExpenseContext";
@@ -59,8 +57,6 @@ export default function ExpensesPage() {
   const { loading, error } = expenseState;
   const rawExpenses = expenseState.expenses;
 
-  const hasSyncedRef = useRef(false);
-  
   const populatedExpenses = populateExpenses(
     rawExpenses,
     categoryState.categories,
@@ -76,40 +72,40 @@ export default function ExpensesPage() {
     now,
   });
   
-  useEffect(() => {
-    const initialize = async () => {
-      dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
+  // useEffect(() => {
+  //   const initialize = async () => {
+  //     dispatch({ type: expenseActionTypes.SET_LOADING, payload: true });
 
-      try {
-        const expenses = await fetchExpenses();
-        dispatch({ type: expenseActionTypes.SET_EXPENSES, payload: expenses });
+  //     try {
+  //       const expenses = await fetchExpenses();
+  //       dispatch({ type: expenseActionTypes.SET_EXPENSES, payload: expenses });
 
-        if (!hasSyncedRef.current) {
-          hasSyncedRef.current = true;
-          const newlyCreated = await syncRecurringExpenses();
+  //       if (!hasSyncedRef.current) {
+  //         hasSyncedRef.current = true;
+  //         const newlyCreated = await syncRecurringExpenses();
 
-          if (newlyCreated.length > 0) {
-            for (const expense of newlyCreated) {
-              const alreadyExists = expenses.some((e) => e.id === expense.id);
-              if (!alreadyExists) {
-                dispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
-              }
-            }
-          }
-        }
+  //         if (newlyCreated.length > 0) {
+  //           for (const expense of newlyCreated) {
+  //             const alreadyExists = expenses.some((e) => e.id === expense.id);
+  //             if (!alreadyExists) {
+  //               dispatch({ type: expenseActionTypes.ADD_EXPENSE, payload: expense });
+  //             }
+  //           }
+  //         }
+  //       }
 
-      } catch (error) {
-        dispatch({
-          type: expenseActionTypes.SET_ERROR,
-          payload: error instanceof Error ? error.message : "Unknown error",
-        });
-      } finally {
-        dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
-      }
-    };
+  //     } catch (error) {
+  //       dispatch({
+  //         type: expenseActionTypes.SET_ERROR,
+  //         payload: error instanceof Error ? error.message : "Unknown error",
+  //       });
+  //     } finally {
+  //       dispatch({ type: expenseActionTypes.SET_LOADING, payload: false });
+  //     }
+  //   };
 
-    initialize();
-  }, []);
+  //   initialize();
+  // }, []);
 
 
 
